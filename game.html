@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เล่นเกม - Office Syndrome Fitness Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Prompt', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .game-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      color: white;
+    }
+
+    .back-link {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.125rem;
+      transition: transform 0.2s;
+    }
+
+    .back-link:hover {
+      transform: translateX(-5px);
+    }
+
+    .header-right {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+
+    .video-section {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    #webcam-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #1a1a1a;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    #webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .camera-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-size: 1.25rem;
+      z-index: 10;
+    }
+
+    .overlay-content {
+      text-align: center;
+    }
+
+    .overlay-content button {
+      margin-top: 1rem;
+      padding: 1rem 2rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .overlay-content button:hover {
+      background: #5568d3;
+      transform: scale(1.05);
+    }
+
+    .stats-section {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .progress-bar {
+      margin: 1.5rem 0;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+
+    .progress-track {
+      height: 12px;
+      background: #E5E7EB;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 1rem;
+      transition: width 0.5s ease;
+    }
+
+    .exercise-info {
+      margin-top: 1.5rem;
+    }
+
+    .exercise-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 0.5rem;
+    }
+
+    .exercise-desc {
+      color: #64748b;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .timer {
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .timer-value {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #667eea;
+      line-height: 1;
+    }
+
+    .timer-label {
+      color: #64748b;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .accuracy-display {
+      background: linear-gradient(135deg, #F0F4FF, #E8EEFF);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .accuracy-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #667eea;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .accuracy-status {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.125rem;
+    }
+
+    .status-excellent { color: #10B981; }
+    .status-good { color: #2196F3; }
+    .status-warning { color: #F59E0B; }
+    .status-danger { color: #EF4444; }
+
+    .feedback-box {
+      background: #FFF9E6;
+      border-left: 4px solid #F59E0B;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .feedback-text {
+      color: #92400E;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 1rem;
+      border: none;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 1rem;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #E5E7EB;
+      color: #334155;
+    }
+
+    .btn-secondary:hover {
+      background: #D1D5DB;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: white;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .exercise-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .exercise-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    .exercise-item:hover {
+      background: #F8FAFC;
+    }
+
+    .exercise-item.completed {
+      background: #DCFCE7;
+    }
+
+    .exercise-item.current {
+      background: #E8EEFF;
+      border-left: 4px solid #667eea;
+    }
+
+    .exercise-name {
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .exercise-score {
+      font-weight: 700;
+    }
+
+    .score-excellent { color: #10B981; }
+    .score-good { color: #2196F3; }
+    .score-warning { color: #F59E0B; }
+    .score-pending { color: #94A3B8; }
+
+    @media (max-width: 1024px) {
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <div class="header">
+      <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
+      <div class="header-right">
+        <div style="color: white; font-weight: 600;">
+          <span>🔥 Streak: <span id="streak">0</span> วัน</span>
+        </div>
+        <div style="color: white; font-weight: 600;">
+          <span>💎 Points: <span id="totalPoints">0</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-layout">
+      <!-- Left: Video Section -->
+      <div class="video-section">
+        <div id="webcam-container">
+          <video id="webcam" autoplay playsinline></video>
+          <canvas id="canvas"></canvas>
+          
+          <div class="camera-overlay" id="cameraOverlay">
+            <div class="overlay-content">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">📸</div>
+              <div>กรุณาอนุญาตการใช้กล้อง</div>
+              <button onclick="startCamera()">🎥 เริ่มใช้กล้อง</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-secondary" onclick="pauseGame()" id="pauseBtn">
+            ⏸️ หยุดชั่วคราว
+          </button>
+          <button class="btn btn-primary" onclick="skipExercise()">
+            ⏭️ ข้ามท่านี้
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Stats Section -->
+      <div class="stats-section">
+        <!-- Progress Card -->
+        <div class="stat-card">
+          <h3 style="color: #334155; margin-bottom: 1rem;">📊 ความคืบหน้า</h3>
+          <div class="progress-bar">
+            <div class="progress-label">
+              <span>ท่าที่ทำแล้ว</span>
+              <span><span id="currentExercise">0</span>/8</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="exercise-info">
+            <div class="exercise-title" id="exerciseTitle">เตรียมตัว...</div>
+            <div class="exercise-desc" id="exerciseDesc">
+              กรุณาอนุญาตการใช้กล้องเพื่อเริ่มเกม
+            </div>
+          </div>
+
+          <div class="timer">
+            <div class="timer-value" id="timerValue">20</div>
+            <div class="timer-label">วินาที</div>
+          </div>
+        </div>
+
+        <!-- Accuracy Card -->
+        <div class="stat-card">
+          <h3 style="color: #334155; margin-bottom: 1rem;">🎯 ความแม่นยำ</h3>
+          <div class="accuracy-display">
+            <div class="accuracy-value" id="accuracyValue">0%</div>
+            <div class="accuracy-status status-good" id="accuracyStatus">
+              พร้อมเริ่มต้น
+            </div>
+          </div>
+          <div class="feedback-box" id="feedbackBox" style="display: none;">
+            <div class="feedback-text" id="feedbackText"></div>
+          </div>
+        </div>
+
+        <!-- Exercise List -->
+        <div class="stat-card">
+          <h3 style="color: #334155; margin-bottom: 1rem;">💪 รายการท่า</h3>
+          <ul class="exercise-list" id="exerciseList">
+            <li class="exercise-item current">
+              <span class="exercise-name">1. Neck Stretch (ยืดคอ)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">2. Shoulder Roll (หมุนไหล่)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">3. Back Stretch (ยืดหลัง)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">4. Side Bend (โน้มข้าง)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">5. Chest Opener (เปิดอก)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">6. Hip Flexor (ยืดสะโพก)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">7. Quad Stretch (ยืดต้นขา)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+            <li class="exercise-item">
+              <span class="exercise-name">8. Calf Stretch (ยืดน่อง)</span>
+              <span class="exercise-score score-pending">—</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MediaPipe Pose -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+  <script>
+    // Game State
+    const gameState = {
+      currentExerciseIndex: 0,
+      exerciseScores: [],
+      isPaused: false,
+      isGameActive: false,
+      timeRemaining: 20,
+      currentAccuracy: 0,
+      streak: parseInt(localStorage.getItem('streak') || '0'),
+      totalPoints: parseInt(localStorage.getItem('totalPoints') || '0')
+    };
+
+    // Exercise Data
+    const exercises = [
+      {
+        name: 'Neck Stretch',
+        nameTH: 'ยืดคอ',
+        duration: 20,
+        description: 'เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ รู้สึกถึงการยืดที่คอ',
+        targetPose: 'neck_stretch'
+      },
+      {
+        name: 'Shoulder Roll',
+        nameTH: 'หมุนไหล่',
+        duration: 20,
+        description: 'หมุนไหล่ทั้งสองข้างไปข้างหน้า 10 ครั้ง แล้วข้างหลัง 10 ครั้ง',
+        targetPose: 'shoulder_roll'
+      },
+      {
+        name: 'Back Stretch',
+        nameTH: 'ยืดหลัง',
+        duration: 20,
+        description: 'นั่งตรง ประสานมือ แล้วเหยียดแขนไปข้างหน้า โค้งหลังเล็กน้อย',
+        targetPose: 'back_stretch'
+      },
+      {
+        name: 'Side Bend',
+        nameTH: 'โน้มข้าง',
+        duration: 20,
+        description: 'ยืนตรง ยกมือข้างหนึ่งขึ้น โน้มตัวไปอีกข้าง สลับซ้าย-ขวา',
+        targetPose: 'side_bend'
+      },
+      {
+        name: 'Chest Opener',
+        nameTH: 'เปิดอก',
+        duration: 20,
+        description: 'ประสานมือหลังหัว ดันอกไปข้างหน้า เหยียดหลังให้ตรง',
+        targetPose: 'chest_opener'
+      },
+      {
+        name: 'Hip Flexor',
+        nameTH: 'ยืดสะโพก',
+        duration: 20,
+        description: 'ย่อเข่าครึ่งทาง เอนตัวไปข้างหลัง รู้สึกยืดที่ขาหน้า',
+        targetPose: 'hip_flexor'
+      },
+      {
+        name: 'Quad Stretch',
+        nameTH: 'ยืดต้นขา',
+        duration: 20,
+        description: 'ยืนขาเดียว จับเท้าข้างหลัง ดึงเข้าหาก้น สลับซ้าย-ขวา',
+        targetPose: 'quad_stretch'
+      },
+      {
+        name: 'Calf Stretch',
+        nameTH: 'ยืดน่อง',
+        duration: 20,
+        description: 'ก้าวเท้าข้างหนึ่งไปข้างหน้า เหยียดเข่าหลัง ส้นติดพื้น',
+        targetPose: 'calf_stretch'
+      }
+    ];
+
+    // MediaPipe Pose Setup
+    let camera = null;
+    let pose = null;
+    let canvasCtx = null;
+
+    // Initialize
+    document.getElementById('streak').textContent = gameState.streak;
+    document.getElementById('totalPoints').textContent = gameState.totalPoints;
+
+    // Start Camera
+    async function startCamera() {
+      const overlay = document.getElementById('cameraOverlay');
+      overlay.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div style="color: white;">กำลังเปิดกล้อง...</div></div>';
+
+      try {
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        canvasCtx = canvas.getContext('2d');
+
+        // Initialize MediaPipe Pose
+        pose = new Pose({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+          }
+        });
+
+        pose.setOptions({
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          smoothSegmentation: false,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+
+        pose.onResults(onPoseResults);
+
+        // Setup Camera
+        camera = new Camera(video, {
+          onFrame: async () => {
+            await pose.send({ image: video });
+          },
+          width: 640,
+          height: 480
+        });
+
+        await camera.start();
+
+        // Hide overlay and start game
+        overlay.style.display = 'none';
+        startGame();
+
+      } catch (error) {
+        console.error('Camera Error:', error);
+        overlay.innerHTML = `
+          <div class="overlay-content">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+            <div>ไม่สามารถเข้าถึงกล้องได้</div>
+            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.8;">
+              กรุณาตรวจสอบว่าอนุญาตการใช้กล้องแล้ว
+            </div>
+            <button onclick="startCamera()">🔄 ลองอีกครั้ง</button>
+          </div>
+        `;
+      }
+    }
+
+    // Process Pose Results
+    function onPoseResults(results) {
+      if (!results.poseLandmarks || gameState.isPaused || !gameState.isGameActive) {
+        return;
+      }
+
+      const canvas = document.getElementById('canvas');
+      const video = document.getElementById('webcam');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Clear canvas
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw landmarks
+      drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, 
+        { color: '#667eea', lineWidth: 4 });
+      drawLandmarks(canvasCtx, results.poseLandmarks,
+        { color: '#764ba2', lineWidth: 2, radius: 6 });
+
+      canvasCtx.restore();
+
+      // Calculate accuracy
+      const accuracy = calculatePoseAccuracy(results.poseLandmarks);
+      updateAccuracy(accuracy);
+    }
+
+    // Calculate Pose Accuracy (Simplified)
+    function calculatePoseAccuracy(landmarks) {
+      // Simple accuracy calculation based on pose stability
+      // In production, this would compare with reference poses
+      
+      const nose = landmarks[0];
+      const leftShoulder = landmarks[11];
+      const rightShoulder = landmarks[12];
+      const leftHip = landmarks[23];
+      const rightHip = landmarks[24];
+
+      // Check if pose is stable (not moving too much)
+      const shoulderWidth = Math.abs(leftShoulder.x - rightShoulder.x);
+      const bodyAlignment = Math.abs(
+        (leftShoulder.x + rightShoulder.x) / 2 - 
+        (leftHip.x + rightHip.x) / 2
+      );
+
+      // Simple scoring (0-100)
+      let score = 70; // Base score
+
+      if (shoulderWidth > 0.15 && shoulderWidth < 0.35) {
+        score += 10; // Good distance from camera
+      }
+
+      if (bodyAlignment < 0.05) {
+        score += 10; // Good alignment
+      }
+
+      if (nose.visibility > 0.8) {
+        score += 10; // Face visible
+      }
+
+      // Add some randomness for demo purposes
+      score += Math.random() * 10 - 5;
+
+      return Math.max(0, Math.min(100, Math.round(score)));
+    }
+
+    // Update Accuracy Display
+    function updateAccuracy(value) {
+      gameState.currentAccuracy = value;
+      document.getElementById('accuracyValue').textContent = value + '%';
+
+      const statusEl = document.getElementById('accuracyStatus');
+      const feedbackBox = document.getElementById('feedbackBox');
+      const feedbackText = document.getElementById('feedbackText');
+
+      if (value >= 90) {
+        statusEl.textContent = '🎉 Perfect Posture!';
+        statusEl.className = 'accuracy-status status-excellent';
+        feedbackText.textContent = 'ยอดเยี่ยม! ทำท่าได้ถูกต้องมาก รักษาท่านี้ไว้';
+        feedbackBox.style.display = 'block';
+        feedbackBox.style.background = '#DCFCE7';
+        feedbackBox.style.borderLeftColor = '#10B981';
+      } else if (value >= 80) {
+        statusEl.textContent = '👍 Great Job!';
+        statusEl.className = 'accuracy-status status-good';
+        feedbackText.textContent = 'ดีมาก! รักษาท่านี้ไว้';
+        feedbackBox.style.display = 'block';
+        feedbackBox.style.background = '#E8EEFF';
+        feedbackBox.style.borderLeftColor = '#2196F3';
+      } else if (value >= 50) {
+        statusEl.textContent = '⚠️ Warning Zone';
+        statusEl.className = 'accuracy-status status-warning';
+        feedbackText.textContent = 'ลองปรับท่าให้ดีกว่านี้ ทำช้าๆ และรู้สึกถึงการยืด';
+        feedbackBox.style.display = 'block';
+        feedbackBox.style.background = '#FFF9E6';
+        feedbackBox.style.borderLeftColor = '#F59E0B';
+      } else {
+        statusEl.textContent = '❌ ต้องปรับปรุง';
+        statusEl.className = 'accuracy-status status-danger';
+        feedbackText.textContent = 'ลองยืดให้มากกว่านี้ และทำช้าลง';
+        feedbackBox.style.display = 'block';
+        feedbackBox.style.background = '#FEE2E2';
+        feedbackBox.style.borderLeftColor = '#EF4444';
+      }
+    }
+
+    // Start Game
+    function startGame() {
+      gameState.isGameActive = true;
+      gameState.currentExerciseIndex = 0;
+      gameState.exerciseScores = [];
+      loadExercise(0);
+    }
+
+    // Load Exercise
+    function loadExercise(index) {
+      if (index >= exercises.length) {
+        endGame();
+        return;
+      }
+
+      const exercise = exercises[index];
+      gameState.currentExerciseIndex = index;
+      gameState.timeRemaining = exercise.duration;
+
+      document.getElementById('exerciseTitle').textContent = 
+        `${index + 1}. ${exercise.nameTH}`;
+      document.getElementById('exerciseDesc').textContent = exercise.description;
+      document.getElementById('currentExercise').textContent = index + 1;
+      document.getElementById('progressFill').style.width = 
+        ((index / exercises.length) * 100) + '%';
+
+      // Update exercise list
+      const items = document.querySelectorAll('.exercise-item');
+      items.forEach((item, i) => {
+        item.classList.remove('current', 'completed');
+        if (i === index) {
+          item.classList.add('current');
+        } else if (i < index) {
+          item.classList.add('completed');
+        }
+      });
+
+      startTimer();
+    }
+
+    // Timer
+    let timerInterval = null;
+    function startTimer() {
+      clearInterval(timerInterval);
+      
+      timerInterval = setInterval(() => {
+        if (gameState.isPaused) return;
+
+        gameState.timeRemaining--;
+        document.getElementById('timerValue').textContent = gameState.timeRemaining;
+
+        if (gameState.timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          completeExercise();
+        }
+      }, 1000);
+    }
+
+    // Complete Exercise
+    function completeExercise() {
+      const score = gameState.currentAccuracy;
+      gameState.exerciseScores.push(score);
+
+      // Update exercise list with score
+      const items = document.querySelectorAll('.exercise-item');
+      const scoreSpan = items[gameState.currentExerciseIndex].querySelector('.exercise-score');
+      scoreSpan.textContent = score + '%';
+      
+      if (score >= 90) {
+        scoreSpan.className = 'exercise-score score-excellent';
+      } else if (score >= 80) {
+        scoreSpan.className = 'exercise-score score-good';
+      } else {
+        scoreSpan.className = 'exercise-score score-warning';
+      }
+
+      // Next exercise
+      setTimeout(() => {
+        loadExercise(gameState.currentExerciseIndex + 1);
+      }, 2000);
+    }
+
+    // Skip Exercise
+    function skipExercise() {
+      if (!gameState.isGameActive) return;
+      
+      clearInterval(timerInterval);
+      gameState.exerciseScores.push(0);
+      
+      const items = document.querySelectorAll('.exercise-item');
+      const scoreSpan = items[gameState.currentExerciseIndex].querySelector('.exercise-score');
+      scoreSpan.textContent = 'Skip';
+      scoreSpan.className = 'exercise-score score-pending';
+      
+      loadExercise(gameState.currentExerciseIndex + 1);
+    }
+
+    // Pause Game
+    function pauseGame() {
+      gameState.isPaused = !gameState.isPaused;
+      const btn = document.getElementById('pauseBtn');
+      
+      if (gameState.isPaused) {
+        btn.innerHTML = '▶️ เล่นต่อ';
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-primary');
+      } else {
+        btn.innerHTML = '⏸️ หยุดชั่วคราว';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+      }
+    }
+
+    // End Game
+    function endGame() {
+      gameState.isGameActive = false;
+      clearInterval(timerInterval);
+
+      // Calculate average score
+      const avgScore = Math.round(
+        gameState.exerciseScores.reduce((a, b) => a + b, 0) / 
+        gameState.exerciseScores.length
+      );
+
+      // Update streak and points
+      gameState.streak++;
+      const pointsEarned = Math.round(avgScore / 2);
+      gameState.totalPoints += pointsEarned;
+
+      localStorage.setItem('streak', gameState.streak);
+      localStorage.setItem('totalPoints', gameState.totalPoints);
+
+      // Show results
+      showResults(avgScore, pointsEarned);
+    }
+
+    // Show Results
+    function showResults(avgScore, pointsEarned) {
+      const overlay = document.getElementById('cameraOverlay');
+      overlay.style.display = 'flex';
+      overlay.style.background = 'rgba(0, 0, 0, 0.95)';
+      
+      let badges = '';
+      if (avgScore >= 90) badges += '🌟 ';
+      if (gameState.streak >= 7) badges += '🔥 ';
+      if (gameState.exerciseScores.filter(s => s >= 95).length >= 5) badges += '💯 ';
+
+      overlay.innerHTML = `
+        <div class="overlay-content" style="max-width: 500px;">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+          <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">เสร็จสิ้น!</h2>
+          
+          <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 1rem; margin-bottom: 1.5rem;">
+            <div style="font-size: 4rem; font-weight: 700; margin-bottom: 0.5rem;">
+              ${avgScore}%
+            </div>
+            <div style="font-size: 1.25rem; opacity: 0.9;">
+              คะแนนเฉลี่ย
+            </div>
+          </div>
+
+          <div style="text-align: left; background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.75rem;">📊 ท่าที่ทำ: 8/8</div>
+            <div style="margin-bottom: 0.75rem;">💎 Points: +${pointsEarned}</div>
+            <div style="margin-bottom: 0.75rem;">🔥 Streak: ${gameState.streak} วัน</div>
+            <div>🏆 Badges: ${badges || 'ไม่มี'}</div>
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button onclick="location.href='index.html'" style="flex: 1; padding: 1rem; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 0.75rem; font-weight: 600; cursor: pointer; font-size: 1rem;">
+              🏠 กลับหน้าหลัก
+            </button>
+            <button onclick="location.reload()" style="flex: 1; padding: 1rem; background: white; color: #667eea; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; font-size: 1rem;">
+              🔄 เล่นอีกรอบ
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Auto-start demo mode if no camera
+    setTimeout(() => {
+      const overlay = document.getElementById('cameraOverlay');
+      if (overlay && overlay.style.display !== 'none') {
+        // Add demo mode button
+        const demoBtn = document.createElement('button');
+        demoBtn.textContent = '🎮 โหมดทดสอบ (ไม่ใช้กล้อง)';
+        demoBtn.style.marginTop = '1rem';
+        demoBtn.onclick = startDemoMode;
+        overlay.querySelector('.overlay-content').appendChild(demoBtn);
+      }
+    }, 3000);
+
+    // Demo Mode (without camera)
+    function startDemoMode() {
+      document.getElementById('cameraOverlay').style.display = 'none';
+      startGame();
+
+      // Simulate pose detection
+      setInterval(() => {
+        if (!gameState.isPaused && gameState.isGameActive) {
+          const randomAccuracy = 60 + Math.random() * 35;
+          updateAccuracy(Math.round(randomAccuracy));
+        }
+      }, 500);
+    }
+  </script>
+</body>
+</html>
