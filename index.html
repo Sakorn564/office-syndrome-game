@@ -3,736 +3,542 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เล่นเกม - Office Syndrome Fitness Game</title>
+  <title>Office Syndrome Game - Live Stream</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
-  
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Prompt', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    .login-screen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      z-index: 99999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-    }
-
-    .login-card {
-      background: white;
-      border-radius: 2rem;
-      padding: 2.5rem;
-      max-width: 520px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.3);
-      animation: slideUp 0.5s ease;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .login-logo { font-size: 3.5rem; margin-bottom: 0.75rem; }
-    .login-title { font-size: 1.75rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem; }
-    .login-subtitle { color: #64748b; margin-bottom: 1.5rem; font-size: 0.95rem; }
-
-    .input-group { margin-bottom: 1.25rem; text-align: left; }
-    .input-group label { display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem; font-size: 0.9rem; }
-    .input-group input {
-      width: 100%; padding: 0.875rem 1.25rem;
-      border: 2px solid #E5E7EB; border-radius: 0.75rem;
-      font-size: 1rem; font-family: 'Prompt', sans-serif;
-      color: #334155; outline: none; transition: border-color 0.3s;
-    }
-    .input-group input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
-
-    /* ===== AVATAR GRID ===== */
-    .avatar-section-label {
-      font-weight: 600;
-      color: #334155;
-      font-size: 0.9rem;
-      text-align: left;
-      margin-bottom: 0.75rem;
-    }
-
-    .avatar-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 0.625rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .avatar-option {
-      position: relative;
-      cursor: pointer;
-      border-radius: 1rem;
-      border: 3px solid transparent;
-      transition: all 0.25s ease;
-      background: #F8FAFC;
-      padding: 0.375rem;
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .avatar-option:hover {
-      transform: translateY(-4px) scale(1.05);
-      border-color: #a5b4fc;
-      background: #EEF2FF;
-      box-shadow: 0 8px 20px rgba(102,126,234,0.25);
-    }
-
-    .avatar-option.selected {
-      border-color: #667eea;
-      background: #E8EEFF;
-      box-shadow: 0 6px 18px rgba(102,126,234,0.4);
-      transform: translateY(-3px) scale(1.05);
-    }
-
-    .avatar-option.selected::after {
-      content: '✓';
-      position: absolute;
-      bottom: 2px; right: 4px;
-      font-size: 0.6rem;
-      background: #667eea;
-      color: white;
-      border-radius: 50%;
-      width: 14px; height: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .avatar-svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .avatar-name {
-      position: absolute;
-      bottom: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #334155;
-      color: white;
-      font-size: 0.65rem;
-      padding: 0.15rem 0.4rem;
-      border-radius: 0.25rem;
-      white-space: nowrap;
-      opacity: 0;
-      transition: all 0.2s;
-      pointer-events: none;
-      font-family: 'Prompt', sans-serif;
-    }
-
-    .avatar-option:hover .avatar-name {
-      opacity: 1;
-      bottom: -18px;
-    }
-
-    /* Selected avatar display */
-    .selected-avatar-display {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: linear-gradient(135deg, #F0F4FF, #E8EEFF);
-      border-radius: 1rem;
-      padding: 0.875rem 1.25rem;
-      margin-bottom: 1.25rem;
-      border: 2px solid #C7D2FE;
-    }
-
-    .selected-avatar-preview {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: white;
-      border: 3px solid #667eea;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
-      flex-shrink: 0;
-    }
-
-    .selected-avatar-preview svg {
-      width: 44px;
-      height: 44px;
-    }
-
-    .selected-avatar-info { text-align: left; }
-    .selected-avatar-name { font-weight: 700; color: #334155; font-size: 1rem; }
-    .selected-avatar-desc { font-size: 0.8rem; color: #64748b; margin-top: 0.1rem; }
-
-    .btn-login {
-      width: 100%;
-      padding: 1.125rem;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white; border: none; border-radius: 0.875rem;
-      font-size: 1.125rem; font-weight: 700; cursor: pointer;
-      transition: all 0.3s; font-family: 'Prompt', sans-serif;
-    }
-    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.4); }
-
-    .online-badge {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      background: #DCFCE7; color: #15803D;
-      padding: 0.4rem 1rem; border-radius: 2rem;
-      font-size: 0.8rem; font-weight: 600; margin-bottom: 1.25rem;
-    }
-    .online-dot {
-      width: 7px; height: 7px; background: #22C55E;
-      border-radius: 50%; animation: blink 1.5s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    /* ===== GAME UI ===== */
-    .game-container { max-width: 1500px; margin: 0 auto; padding: 1.5rem; }
-
-    .header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 1.5rem; color: white; flex-wrap: wrap; gap: 1rem;
-    }
-
-    .back-link { color: white; text-decoration: none; font-weight: 600; font-size: 1rem; }
-
-    .header-center {
-      display: flex; align-items: center; gap: 0.875rem;
-      background: rgba(255,255,255,0.2); padding: 0.75rem 1.25rem; border-radius: 2rem;
-    }
-
-    .header-avatar-wrap {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: white; border: 2px solid rgba(255,255,255,0.5);
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; flex-shrink: 0;
-    }
-
-    .header-avatar-wrap svg { width: 36px; height: 36px; }
-
-    .header-username { font-weight: 700; font-size: 1.1rem; }
-
-    .header-right { display: flex; gap: 0.75rem; align-items: center; }
-
-    .stat-pill {
-      background: rgba(255,255,255,0.2); color: white;
-      padding: 0.5rem 1rem; border-radius: 2rem;
-      font-weight: 600; font-size: 0.875rem;
-    }
-
-    .game-layout {
-      display: grid;
-      grid-template-columns: 1.5fr 1fr 1fr;
-      gap: 1.5rem;
-    }
-
-    .video-section {
-      background: white; border-radius: 1.5rem;
-      padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    }
-
-    #webcam-container {
-      position: relative; width: 100%; aspect-ratio: 4/3;
-      background: #1a1a1a; border-radius: 1rem; overflow: hidden;
-    }
-
-    #webcam { width: 100%; height: 100%; object-fit: cover; }
-
-    #canvas { position: absolute; top:0; left:0; width:100%; height:100%; }
-
-    .camera-overlay {
-      position: absolute; top:0; left:0; right:0; bottom:0;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.75); color: white; z-index: 10;
-    }
-
-    .overlay-content { text-align: center; padding: 2rem; }
-
-    .overlay-content button {
-      margin-top: 0.75rem; padding: 0.875rem 1.75rem;
-      background: #667eea; color: white; border: none;
-      border-radius: 0.75rem; font-size: 1rem; font-weight: 600;
-      cursor: pointer; font-family: 'Prompt', sans-serif;
-      display: block; width: 100%; transition: all 0.3s;
-    }
-    .overlay-content button:hover { background: #5568d3; }
-
-    .stats-section { display: flex; flex-direction: column; gap: 1.25rem; }
-
-    .stat-card {
-      background: white; border-radius: 1.5rem;
-      padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-    .stat-card h3 { color: #334155; margin-bottom: 1rem; font-size: 1rem; }
-
-    .progress-bar { margin: 1rem 0; }
-    .progress-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #64748b; font-size: 0.875rem; }
-    .progress-track { height: 10px; background: #E5E7EB; border-radius: 1rem; overflow: hidden; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 1rem; transition: width 0.5s ease; }
-
-    .exercise-title { font-size: 1.25rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; }
-    .exercise-desc { color: #64748b; font-size: 0.875rem; line-height: 1.5; }
-
-    .timer { text-align: center; margin: 1rem 0; }
-    .timer-value { font-size: 3.5rem; font-weight: 700; color: #667eea; line-height: 1; }
-    .timer-label { color: #64748b; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; }
-
-    .accuracy-display {
-      background: linear-gradient(135deg, #F0F4FF, #E8EEFF);
-      border-radius: 1rem; padding: 1.25rem; text-align: center; margin-bottom: 0.75rem;
-    }
-    .accuracy-value { font-size: 2.5rem; font-weight: 700; color: #667eea; }
-    .accuracy-status { font-weight: 600; font-size: 1rem; margin-top: 0.25rem; }
-    .status-excellent { color: #10B981; }
-    .status-good { color: #2196F3; }
-    .status-warning { color: #F59E0B; }
-    .status-danger { color: #EF4444; }
-
-    .feedback-box { padding: 0.875rem; border-radius: 0.5rem; }
-    .feedback-text { font-size: 0.875rem; line-height: 1.5; }
-
-    .exercise-list { list-style: none; }
-    .exercise-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0.6rem 0.75rem; border-radius: 0.5rem; margin-bottom: 0.25rem; font-size: 0.875rem;
-    }
-    .exercise-item.completed { background: #DCFCE7; }
-    .exercise-item.current { background: #E8EEFF; border-left: 3px solid #667eea; }
-    .exercise-name { font-weight: 600; color: #334155; }
-    .exercise-score { font-weight: 700; }
-    .score-excellent { color: #10B981; }
-    .score-good { color: #2196F3; }
-    .score-warning { color: #F59E0B; }
-    .score-pending { color: #94A3B8; }
-
-    .controls { display: flex; gap: 0.75rem; margin-top: 1rem; }
-    .btn { flex: 1; padding: 0.875rem; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; font-family: 'Prompt', sans-serif; transition: all 0.3s; }
-    .btn-primary { background: #667eea; color: white; }
-    .btn-primary:hover { background: #5568d3; }
-    .btn-secondary { background: #E5E7EB; color: #334155; }
-    .btn-secondary:hover { background: #D1D5DB; }
-
-    .community-section { display: flex; flex-direction: column; gap: 1.25rem; }
-
-    .live-players-card, .leaderboard-card, .feed-card {
-      background: white; border-radius: 1.5rem;
-      padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-
-    .leaderboard-card { flex: 1; }
-
-    .live-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .live-title { font-weight: 700; color: #334155; font-size: 1rem; }
-    .live-count { background: #EF4444; color: white; padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; }
-
-    .live-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; }
-
-    /* Live player with cartoon avatar */
-    .live-player {
-      display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.6rem 0.75rem; background: #F8FAFC;
-      border-radius: 0.75rem;
-    }
-
-    .live-avatar-wrap {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: #E8EEFF; border: 2px solid #C7D2FE;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; flex-shrink: 0;
-    }
-
-    .live-avatar-wrap svg { width: 26px; height: 26px; }
-
-    .live-player-info { flex: 1; min-width: 0; }
-    .live-player-name { font-weight: 600; color: #334155; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .live-player-status { font-size: 0.75rem; color: #64748b; }
-    .live-player-score { font-weight: 700; color: #667eea; font-size: 0.875rem; white-space: nowrap; }
-    .live-pulse { width: 8px; height: 8px; background: #22C55E; border-radius: 50%; flex-shrink: 0; animation: blink 1.5s ease-in-out infinite; }
-
-    .lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .lb-title { font-weight: 700; color: #334155; font-size: 1rem; }
-    .lb-tabs { display: flex; gap: 0.25rem; background: #F1F5F9; padding: 0.25rem; border-radius: 0.75rem; }
-    .lb-tab { padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #64748b; transition: all 0.2s; border: none; background: transparent; font-family: 'Prompt', sans-serif; }
-    .lb-tab.active { background: white; color: #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-    .lb-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; }
-
-    .lb-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; transition: background 0.2s; }
-    .lb-item:hover { background: #F8FAFC; }
-    .lb-item.is-me { background: #E8EEFF; border: 2px solid #667eea; }
-
-    .lb-rank { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 0.875rem; flex-shrink: 0; }
-    .rank-1 { background: #FFD700; color: #92400E; }
-    .rank-2 { background: #C0C0C0; color: #374151; }
-    .rank-3 { background: #CD7F32; color: white; }
-    .rank-other { background: #F1F5F9; color: #64748b; }
-
-    /* LB avatar */
-    .lb-avatar-wrap {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: #F1F5F9; border: 2px solid #E5E7EB;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; flex-shrink: 0;
-    }
-    .lb-avatar-wrap svg { width: 28px; height: 28px; }
-
-    .lb-info { flex: 1; min-width: 0; }
-    .lb-name { font-weight: 600; color: #334155; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .lb-meta { font-size: 0.75rem; color: #94A3B8; }
-    .lb-score-col { text-align: right; flex-shrink: 0; }
-    .lb-score { font-weight: 700; color: #334155; font-size: 0.875rem; }
-    .lb-accuracy { font-size: 0.75rem; color: #667eea; }
-
-    .you-badge { font-size: 0.65rem; background: #667eea; color: white; padding: 0.1rem 0.4rem; border-radius: 2rem; font-weight: 700; }
-
-    .my-rank-banner {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white; border-radius: 1rem; padding: 1rem 1.25rem;
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
-    }
-    .my-rank-left { display: flex; align-items: center; gap: 0.75rem; }
-
-    .banner-avatar-wrap {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.5);
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-    }
-    .banner-avatar-wrap svg { width: 36px; height: 36px; }
-
-    .my-rank-number { font-size: 1.5rem; font-weight: 900; }
-    .my-rank-points { font-size: 1.25rem; font-weight: 700; }
-
-    .feed-card { }
-    .feed-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto; }
-    .feed-item { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.625rem; background: #F8FAFC; border-radius: 0.75rem; }
-    .feed-icon { font-size: 1.125rem; flex-shrink: 0; }
-    .feed-text { font-size: 0.8rem; color: #475569; line-height: 1.5; }
-    .feed-time { font-size: 0.7rem; color: #94A3B8; margin-top: 0.2rem; }
-
-    .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 99998; display: flex; flex-direction: column; gap: 0.75rem; max-width: 320px; }
-    .toast { background: white; border-radius: 1rem; padding: 1rem 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0.75rem; animation: toastIn 0.4s ease; border-left: 4px solid #667eea; }
-    @keyframes toastIn { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
-    @keyframes toastOut { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(50px)} }
-    .toast-icon { font-size: 1.5rem; }
-    .toast-body { flex: 1; }
-    .toast-title { font-weight: 700; color: #334155; font-size: 0.875rem; }
-    .toast-msg { color: #64748b; font-size: 0.8rem; margin-top: 0.1rem; }
-
-    .loading-spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-
-    .exercise-preview-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:none; align-items:center; justify-content:center; padding:2rem; }
-    .preview-content { background:white; border-radius:2rem; max-width:700px; width:100%; max-height:90vh; overflow-y:auto; }
-    .preview-header { background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:1.75rem; border-radius:2rem 2rem 0 0; text-align:center; }
-    .preview-number { display:inline-block; background:rgba(255,255,255,0.2); padding:0.4rem 1.25rem; border-radius:2rem; font-size:0.9rem; font-weight:600; margin-bottom:0.75rem; }
-    .preview-title { font-size:2rem; font-weight:900; margin-bottom:0.25rem; }
-    .preview-subtitle { font-size:1.25rem; opacity:0.95; }
-    .preview-body { padding:1.5rem; }
-    .preview-image-container { width:100%; aspect-ratio:16/9; background:#F8FAFC; border-radius:1rem; overflow:hidden; margin-bottom:1.25rem; border:2px solid #E5E7EB; position:relative; }
-    .preview-image { width:100%; height:100%; object-fit:contain; background:white; transition:opacity 0.3s; }
-    .image-loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2rem; animation:spin 2s linear infinite; }
-    .preview-description { background:#F8FAFC; border-radius:0.75rem; padding:1.25rem; margin-bottom:1rem; border-left:4px solid #667eea; }
-    .preview-desc-title { font-size:0.875rem; font-weight:700; color:#334155; margin-bottom:0.5rem; }
-    .preview-desc-text { font-size:1rem; color:#64748b; line-height:1.7; }
-    .preview-countdown { text-align:center; padding:1.5rem; background:linear-gradient(135deg,#F0F4FF,#E8EEFF); border-radius:1rem; margin-bottom:1rem; }
-    .countdown-label { font-size:0.875rem; color:#64748b; margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:1px; }
-    .countdown-value { font-size:4rem; font-weight:900; color:#667eea; line-height:1; animation:pulse 1s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
-    .preview-actions { display:flex; gap:1rem; padding:0 1.5rem 1.5rem; }
-    .preview-btn { flex:1; padding:1rem; border:none; border-radius:0.875rem; font-weight:700; font-size:1rem; cursor:pointer; font-family:'Prompt',sans-serif; transition:all 0.3s; }
-    .btn-skip-preview { background:#E5E7EB; color:#334155; }
-    .btn-start-exercise { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
-    .btn-start-exercise:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(102,126,234,0.4); }
-
-    .tutorial-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; display:flex; align-items:center; justify-content:center; padding:2rem; }
-    .tutorial-content { background:white; border-radius:2rem; max-width:800px; width:100%; max-height:90vh; overflow-y:auto; }
-    .tutorial-header { background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:1.75rem; border-radius:2rem 2rem 0 0; text-align:center; }
-    .tutorial-header h2 { font-size:1.75rem; font-weight:700; }
-    .tutorial-body { padding:1.5rem; }
-    .carousel-item { display:none; }
-    .carousel-item.active { display:block; }
-    .exercise-card { background:#F8FAFC; border-radius:1.25rem; overflow:hidden; border:2px solid #E5E7EB; }
-    .exercise-image { width:100%; height:220px; background:linear-gradient(135deg,#667eea20,#764ba220); display:flex; align-items:center; justify-content:center; }
-    .exercise-emoji { font-size:5rem; animation:float 3s ease-in-out infinite; }
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
-    .exercise-details { padding:1.5rem; }
-    .exercise-number { display:inline-block; background:#667eea; color:white; padding:0.4rem 0.875rem; border-radius:2rem; font-weight:700; font-size:0.8rem; margin-bottom:0.75rem; }
-    .exercise-card-title { font-size:1.5rem; font-weight:700; color:#334155; }
-    .exercise-card-subtitle { font-size:1rem; color:#667eea; font-weight:600; margin-bottom:1rem; }
-    .exercise-card-description { color:#64748b; line-height:1.7; margin-bottom:1rem; }
-    .exercise-benefits { background:white; border-radius:0.75rem; padding:1.25rem; border:2px solid #E5E7EB; }
-    .benefits-title { font-weight:700; color:#334155; margin-bottom:0.75rem; font-size:0.9rem; }
-    .benefits-list { list-style:none; }
-    .benefits-list li { padding:0.4rem 0; color:#64748b; display:flex; gap:0.5rem; font-size:0.9rem; }
-    .benefits-list li::before { content:'✓'; color:#10B981; font-weight:700; }
-    .carousel-controls { display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; }
-    .carousel-btn { background:#667eea; color:white; border:none; padding:0.875rem 1.5rem; border-radius:0.75rem; font-weight:600; cursor:pointer; font-family:'Prompt',sans-serif; transition:all 0.3s; }
-    .carousel-btn:hover:not(:disabled) { background:#5568d3; }
-    .carousel-btn:disabled { background:#E5E7EB; color:#94A3B8; cursor:not-allowed; }
-    .carousel-indicators { display:flex; gap:0.4rem; }
-    .indicator-dot { width:10px; height:10px; border-radius:50%; background:#E5E7EB; cursor:pointer; transition:all 0.3s; }
-    .indicator-dot.active { background:#667eea; width:28px; border-radius:5px; }
-    .tutorial-footer { padding:1.5rem; border-top:2px solid #E5E7EB; display:flex; gap:1rem; }
-    .btn-skip { background:#E5E7EB; color:#334155; }
-    .btn-start { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
-
-    .lb-list::-webkit-scrollbar,
-    .live-list::-webkit-scrollbar,
-    .feed-list::-webkit-scrollbar { width:4px; }
-    .lb-list::-webkit-scrollbar-track,
-    .live-list::-webkit-scrollbar-track,
-    .feed-list::-webkit-scrollbar-track { background:#F1F5F9; }
-    .lb-list::-webkit-scrollbar-thumb,
-    .live-list::-webkit-scrollbar-thumb,
-    .feed-list::-webkit-scrollbar-thumb { background:#667eea; border-radius:2px; }
-
-    @media (max-width:1200px) {
-      .game-layout { grid-template-columns:1.5fr 1fr; }
-      .community-section { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
-    }
-    @media (max-width:768px) {
-      .game-layout { grid-template-columns:1fr; }
-      .community-section { grid-template-columns:1fr; }
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Prompt',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;overflow-x:hidden}
+
+    /* ── LOGIN ── */
+    .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#667eea,#764ba2);z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem}
+    .login-card{background:white;border-radius:2rem;padding:2.5rem;max-width:520px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.3);animation:slideUp .5s ease}
+    @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+    .login-logo{font-size:3.5rem;margin-bottom:.75rem}
+    .login-title{font-size:1.75rem;font-weight:700;color:#334155;margin-bottom:.5rem}
+    .login-subtitle{color:#64748b;margin-bottom:1.5rem;font-size:.95rem}
+    .input-group{margin-bottom:1.25rem;text-align:left}
+    .input-group label{display:block;font-weight:600;color:#334155;margin-bottom:.5rem;font-size:.9rem}
+    .input-group input{width:100%;padding:.875rem 1.25rem;border:2px solid #E5E7EB;border-radius:.75rem;font-size:1rem;font-family:'Prompt',sans-serif;color:#334155;outline:none;transition:border-color .3s}
+    .input-group input:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+    .avatar-section-label{font-weight:600;color:#334155;font-size:.9rem;text-align:left;margin-bottom:.75rem}
+    .avatar-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.625rem;margin-bottom:1.5rem}
+    .avatar-option{position:relative;cursor:pointer;border-radius:1rem;border:3px solid transparent;transition:all .25s;background:#F8FAFC;padding:.375rem;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .avatar-option:hover{transform:translateY(-4px) scale(1.05);border-color:#a5b4fc;background:#EEF2FF}
+    .avatar-option.selected{border-color:#667eea;background:#E8EEFF;transform:translateY(-3px) scale(1.05)}
+    .avatar-option.selected::after{content:'✓';position:absolute;bottom:2px;right:4px;font-size:.6rem;background:#667eea;color:white;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;font-weight:700}
+    .avatar-name{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);background:#334155;color:white;font-size:.65rem;padding:.15rem .4rem;border-radius:.25rem;white-space:nowrap;opacity:0;transition:all .2s;pointer-events:none;font-family:'Prompt',sans-serif}
+    .avatar-option:hover .avatar-name{opacity:1;bottom:-18px}
+    .selected-av-box{display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#F0F4FF,#E8EEFF);border-radius:1rem;padding:.875rem 1.25rem;margin-bottom:1.25rem;border:2px solid #C7D2FE}
+    .selected-av-preview{width:56px;height:56px;border-radius:50%;background:white;border:3px solid #667eea;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 12px rgba(102,126,234,.3);flex-shrink:0}
+    .selected-av-preview svg{width:44px;height:44px}
+    .selected-av-name{font-weight:700;color:#334155;font-size:1rem}
+    .selected-av-desc{font-size:.8rem;color:#64748b;margin-top:.1rem}
+    .btn-login{width:100%;padding:1.125rem;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:.875rem;font-size:1.125rem;font-weight:700;cursor:pointer;transition:all .3s;font-family:'Prompt',sans-serif}
+    .btn-login:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(102,126,234,.4)}
+    .online-badge{display:inline-flex;align-items:center;gap:.5rem;background:#DCFCE7;color:#15803D;padding:.4rem 1rem;border-radius:2rem;font-size:.8rem;font-weight:600;margin-bottom:1.25rem}
+    .online-dot{width:7px;height:7px;background:#22C55E;border-radius:50%;animation:blink 1.5s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* ── MAIN GAME ── */
+    .game-container{max-width:1500px;margin:0 auto;padding:1.5rem}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;color:white;flex-wrap:wrap;gap:1rem}
+    .back-link{color:white;text-decoration:none;font-weight:600;font-size:1rem}
+    .header-center{display:flex;align-items:center;gap:.875rem;background:rgba(255,255,255,.2);padding:.75rem 1.25rem;border-radius:2rem}
+    .header-av-wrap{width:44px;height:44px;border-radius:50%;background:white;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+    .header-av-wrap svg{width:36px;height:36px}
+    .header-username{font-weight:700;font-size:1.1rem}
+    .header-right{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+    .stat-pill{background:rgba(255,255,255,.2);color:white;padding:.5rem 1rem;border-radius:2rem;font-weight:600;font-size:.875rem}
+    .live-btn{background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:2rem;padding:.5rem 1.25rem;font-weight:700;font-size:.875rem;cursor:pointer;font-family:'Prompt',sans-serif;display:flex;align-items:center;gap:.5rem;transition:all .2s}
+    .live-btn:hover{background:rgba(255,255,255,.25)}
+    .live-badge{background:#EF4444;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+
+    /* ── LAYOUT ── */
+    .game-layout{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:1.5rem}
+    .video-section{background:white;border-radius:1.5rem;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    #webcam-container{position:relative;width:100%;aspect-ratio:4/3;background:#1a1a1a;border-radius:1rem;overflow:hidden}
+    #webcam{width:100%;height:100%;object-fit:cover}
+    #canvas{position:absolute;inset:0;width:100%;height:100%}
+    .cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);color:white;z-index:10}
+    .overlay-content{text-align:center;padding:2rem}
+    .overlay-content button{margin-top:.75rem;padding:.875rem 1.75rem;background:#667eea;color:white;border:none;border-radius:.75rem;font-size:1rem;font-weight:600;cursor:pointer;font-family:'Prompt',sans-serif;display:block;width:100%;transition:all .3s}
+    .overlay-content button:hover{background:#5568d3}
+    .stats-section{display:flex;flex-direction:column;gap:1.25rem}
+    .stat-card{background:white;border-radius:1.5rem;padding:1.5rem;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+    .stat-card h3{color:#334155;margin-bottom:1rem;font-size:1rem}
+    .progress-bar{margin:1rem 0}
+    .progress-label{display:flex;justify-content:space-between;margin-bottom:.5rem;color:#64748b;font-size:.875rem}
+    .progress-track{height:10px;background:#E5E7EB;border-radius:1rem;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:1rem;transition:width .5s ease}
+    .ex-title{font-size:1.25rem;font-weight:700;color:#334155;margin-bottom:.25rem}
+    .ex-desc{color:#64748b;font-size:.875rem;line-height:1.5}
+    .timer{text-align:center;margin:1rem 0}
+    .timer-val{font-size:3.5rem;font-weight:700;color:#667eea;line-height:1}
+    .timer-lbl{color:#64748b;font-size:.875rem;text-transform:uppercase;letter-spacing:1px}
+    .acc-display{background:linear-gradient(135deg,#F0F4FF,#E8EEFF);border-radius:1rem;padding:1.25rem;text-align:center;margin-bottom:.75rem}
+    .acc-val{font-size:2.5rem;font-weight:700;color:#667eea}
+    .acc-status{font-weight:600;font-size:1rem;margin-top:.25rem}
+    .s-ex{color:#10B981}.s-good{color:#2196F3}.s-warn{color:#F59E0B}.s-danger{color:#EF4444}
+    .feedback-box{padding:.875rem;border-radius:.5rem}
+    .feedback-text{font-size:.875rem;line-height:1.5}
+    .ex-list{list-style:none}
+    .ex-item{display:flex;justify-content:space-between;align-items:center;padding:.6rem .75rem;border-radius:.5rem;margin-bottom:.25rem;font-size:.875rem}
+    .ex-item.completed{background:#DCFCE7}
+    .ex-item.current{background:#E8EEFF;border-left:3px solid #667eea}
+    .ex-name{font-weight:600;color:#334155}
+    .ex-score{font-weight:700}
+    .sc-ex{color:#10B981}.sc-good{color:#2196F3}.sc-warn{color:#F59E0B}.sc-pend{color:#94A3B8}
+    .controls{display:flex;gap:.75rem;margin-top:1rem}
+    .btn{flex:1;padding:.875rem;border:none;border-radius:.75rem;font-weight:600;cursor:pointer;font-size:.95rem;font-family:'Prompt',sans-serif;transition:all .3s}
+    .btn-p{background:#667eea;color:white}.btn-p:hover{background:#5568d3}
+    .btn-s{background:#E5E7EB;color:#334155}.btn-s:hover{background:#D1D5DB}
+    .comm-section{display:flex;flex-direction:column;gap:1.25rem}
+    .live-card,.lb-card,.feed-card{background:white;border-radius:1.5rem;padding:1.5rem;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+    .lb-card{flex:1}
+    .live-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+    .live-title{font-weight:700;color:#334155;font-size:1rem}
+    .live-cnt{background:#EF4444;color:white;padding:.2rem .6rem;border-radius:2rem;font-size:.75rem;font-weight:700}
+    .live-list{display:flex;flex-direction:column;gap:.5rem;max-height:200px;overflow-y:auto}
+    .live-player{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:#F8FAFC;border-radius:.75rem}
+    .lp-av{width:32px;height:32px;border-radius:50%;background:#E8EEFF;border:2px solid #C7D2FE;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+    .lp-av svg{width:26px;height:26px}
+    .lp-info{flex:1;min-width:0}
+    .lp-name{font-weight:600;color:#334155;font-size:.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .lp-status{font-size:.75rem;color:#64748b}
+    .lp-score{font-weight:700;color:#667eea;font-size:.875rem;white-space:nowrap}
+    .lp-pulse{width:8px;height:8px;background:#22C55E;border-radius:50%;flex-shrink:0;animation:blink 1.5s ease-in-out infinite}
+    .lb-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+    .lb-ttl{font-weight:700;color:#334155;font-size:1rem}
+    .lb-tabs{display:flex;gap:.25rem;background:#F1F5F9;padding:.25rem;border-radius:.75rem}
+    .lb-tab{padding:.375rem .75rem;border-radius:.5rem;font-size:.8rem;font-weight:600;cursor:pointer;color:#64748b;transition:all .2s;border:none;background:transparent;font-family:'Prompt',sans-serif}
+    .lb-tab.active{background:white;color:#667eea;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+    .lb-list{display:flex;flex-direction:column;gap:.5rem;max-height:400px;overflow-y:auto}
+    .lb-item{display:flex;align-items:center;gap:.75rem;padding:.75rem;border-radius:.75rem;transition:background .2s}
+    .lb-item:hover{background:#F8FAFC}
+    .lb-item.is-me{background:#E8EEFF;border:2px solid #667eea}
+    .lb-rank{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700;font-size:.875rem;flex-shrink:0}
+    .r1{background:#FFD700;color:#92400E}.r2{background:#C0C0C0;color:#374151}.r3{background:#CD7F32;color:white}.rn{background:#F1F5F9;color:#64748b}
+    .lb-av{width:36px;height:36px;border-radius:50%;background:#F1F5F9;border:2px solid #E5E7EB;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+    .lb-av svg{width:28px;height:28px}
+    .lb-info{flex:1;min-width:0}
+    .lb-name{font-weight:600;color:#334155;font-size:.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .lb-meta{font-size:.75rem;color:#94A3B8}
+    .lb-sc-col{text-align:right;flex-shrink:0}
+    .lb-sc{font-weight:700;color:#334155;font-size:.875rem}
+    .lb-acc{font-size:.75rem;color:#667eea}
+    .you-badge{font-size:.65rem;background:#667eea;color:white;padding:.1rem .4rem;border-radius:2rem;font-weight:700}
+    .rank-banner{background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:1rem;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+    .rb-left{display:flex;align-items:center;gap:.75rem}
+    .rb-av{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.25);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .rb-av svg{width:36px;height:36px}
+    .rb-rank{font-size:1.5rem;font-weight:900}
+    .rb-pts{font-size:1.25rem;font-weight:700}
+    .feed-list{display:flex;flex-direction:column;gap:.5rem;max-height:180px;overflow-y:auto}
+    .feed-item{display:flex;align-items:flex-start;gap:.625rem;padding:.625rem;background:#F8FAFC;border-radius:.75rem}
+    .fi-icon{font-size:1.125rem;flex-shrink:0}
+    .fi-text{font-size:.8rem;color:#475569;line-height:1.5}
+    .fi-time{font-size:.7rem;color:#94A3B8;margin-top:.2rem}
+    .toast-wrap{position:fixed;bottom:6rem;right:2rem;z-index:99998;display:flex;flex-direction:column;gap:.75rem;max-width:320px}
+    .toast{background:white;border-radius:1rem;padding:1rem 1.25rem;box-shadow:0 10px 30px rgba(0,0,0,.2);display:flex;align-items:center;gap:.75rem;animation:tIn .4s ease;border-left:4px solid #667eea}
+    @keyframes tIn{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes tOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(50px)}}
+    .ti{font-size:1.5rem}.tb{flex:1}
+    .tt{font-weight:700;color:#334155;font-size:.875rem}
+    .tm{color:#64748b;font-size:.8rem;margin-top:.1rem}
+    .spin{width:40px;height:40px;border:4px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:rot 1s linear infinite;margin:0 auto 1rem}
+    @keyframes rot{to{transform:rotate(360deg)}}
+
+    /* ── PREVIEW ── */
+    .prev-overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:none;align-items:center;justify-content:center;padding:2rem}
+    .prev-card{background:white;border-radius:2rem;max-width:700px;width:100%;max-height:90vh;overflow-y:auto}
+    .prev-hdr{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:1.75rem;border-radius:2rem 2rem 0 0;text-align:center}
+    .prev-num{display:inline-block;background:rgba(255,255,255,.2);padding:.4rem 1.25rem;border-radius:2rem;font-size:.9rem;font-weight:600;margin-bottom:.75rem}
+    .prev-title{font-size:2rem;font-weight:900;margin-bottom:.25rem}
+    .prev-sub{font-size:1.25rem;opacity:.95}
+    .prev-body{padding:1.5rem}
+    .prev-img-wrap{width:100%;aspect-ratio:16/9;background:#F8FAFC;border-radius:1rem;overflow:hidden;margin-bottom:1.25rem;border:2px solid #E5E7EB;position:relative}
+    .prev-img{width:100%;height:100%;object-fit:contain;background:white;transition:opacity .3s}
+    .img-load{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;animation:rot 2s linear infinite}
+    .prev-desc{background:#F8FAFC;border-radius:.75rem;padding:1.25rem;margin-bottom:1rem;border-left:4px solid #667eea}
+    .prev-desc-ttl{font-size:.875rem;font-weight:700;color:#334155;margin-bottom:.5rem}
+    .prev-desc-txt{font-size:1rem;color:#64748b;line-height:1.7}
+    .prev-cd{text-align:center;padding:1.5rem;background:linear-gradient(135deg,#F0F4FF,#E8EEFF);border-radius:1rem;margin-bottom:1rem}
+    .cd-lbl{font-size:.875rem;color:#64748b;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:1px}
+    .cd-val{font-size:4rem;font-weight:900;color:#667eea;line-height:1;animation:pulse 1s ease-in-out infinite}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+    .prev-actions{display:flex;gap:1rem;padding:0 1.5rem 1.5rem}
+    .prev-btn{flex:1;padding:1rem;border:none;border-radius:.875rem;font-weight:700;font-size:1rem;cursor:pointer;font-family:'Prompt',sans-serif;transition:all .3s}
+    .pb-skip{background:#E5E7EB;color:#334155}
+    .pb-start{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+    .pb-start:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,.4)}
+
+    /* ── TUTORIAL ── */
+    .tut-modal{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10000;display:flex;align-items:center;justify-content:center;padding:2rem}
+    .tut-card{background:white;border-radius:2rem;max-width:800px;width:100%;max-height:90vh;overflow-y:auto}
+    .tut-hdr{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:1.75rem;border-radius:2rem 2rem 0 0;text-align:center}
+    .tut-hdr h2{font-size:1.75rem;font-weight:700}
+    .tut-body{padding:1.5rem}
+    .c-item{display:none}.c-item.active{display:block}
+    .ex-card{background:#F8FAFC;border-radius:1.25rem;overflow:hidden;border:2px solid #E5E7EB}
+    .ex-img{width:100%;height:220px;background:linear-gradient(135deg,#667eea20,#764ba220);display:flex;align-items:center;justify-content:center}
+    .ex-emoji{font-size:5rem;animation:fl 3s ease-in-out infinite}
+    @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+    .ex-details{padding:1.5rem}
+    .ex-num{display:inline-block;background:#667eea;color:white;padding:.4rem .875rem;border-radius:2rem;font-weight:700;font-size:.8rem;margin-bottom:.75rem}
+    .ex-card-ttl{font-size:1.5rem;font-weight:700;color:#334155}
+    .ex-card-sub{font-size:1rem;color:#667eea;font-weight:600;margin-bottom:1rem}
+    .ex-card-desc{color:#64748b;line-height:1.7;margin-bottom:1rem}
+    .ex-benefits{background:white;border-radius:.75rem;padding:1.25rem;border:2px solid #E5E7EB}
+    .ben-ttl{font-weight:700;color:#334155;margin-bottom:.75rem;font-size:.9rem}
+    .ben-list{list-style:none}
+    .ben-list li{padding:.4rem 0;color:#64748b;display:flex;gap:.5rem;font-size:.9rem}
+    .ben-list li::before{content:'✓';color:#10B981;font-weight:700}
+    .c-controls{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem}
+    .c-btn{background:#667eea;color:white;border:none;padding:.875rem 1.5rem;border-radius:.75rem;font-weight:600;cursor:pointer;font-family:'Prompt',sans-serif;transition:all .3s}
+    .c-btn:hover:not(:disabled){background:#5568d3}
+    .c-btn:disabled{background:#E5E7EB;color:#94A3B8;cursor:not-allowed}
+    .c-dots{display:flex;gap:.4rem}
+    .c-dot{width:10px;height:10px;border-radius:50%;background:#E5E7EB;cursor:pointer;transition:all .3s}
+    .c-dot.active{background:#667eea;width:28px;border-radius:5px}
+    .tut-footer{padding:1.5rem;border-top:2px solid #E5E7EB;display:flex;gap:1rem}
+    .btn-tskip{background:#E5E7EB;color:#334155}
+    .btn-tstart{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+
+    /* ══════════════════════════════════════
+       GALLERY / LIVE STREAM MODAL
+    ══════════════════════════════════════ */
+    .g-float{position:fixed;bottom:2rem;left:2rem;z-index:9000;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:1rem;padding:.875rem 1.5rem;font-weight:700;font-size:1rem;cursor:pointer;font-family:'Prompt',sans-serif;display:none;align-items:center;gap:.625rem;box-shadow:0 8px 25px rgba(102,126,234,.4);transition:all .3s;animation:popIn .4s ease}
+    @keyframes popIn{from{transform:scale(0);opacity:0}70%{transform:scale(1.1)}to{transform:scale(1);opacity:1}}
+    .g-float:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(102,126,234,.5)}
+    .g-float-cnt{background:#EF4444;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
+
+    /* Gallery Modal Full-screen */
+    .g-modal{position:fixed;inset:0;background:#080818;z-index:99000;display:none;flex-direction:column;overflow:hidden}
+    .g-modal.open{display:flex;animation:fadeG .25s ease}
+    @keyframes fadeG{from{opacity:0}to{opacity:1}}
+
+    /* Topbar */
+    .g-topbar{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.5rem;background:#0f0f24;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;flex-wrap:wrap;gap:.75rem}
+    .g-topbar-l{display:flex;align-items:center;gap:1rem}
+    .g-topbar-title{color:white;font-size:1.25rem;font-weight:700;display:flex;align-items:center;gap:.625rem}
+    .g-live-pill{background:#EF4444;color:white;padding:.2rem .75rem;border-radius:2rem;font-size:.75rem;font-weight:700;display:flex;align-items:center;gap:.35rem}
+    .g-live-d{width:6px;height:6px;border-radius:50%;background:white;animation:blink 1s infinite}
+    .g-topbar-r{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .g-gb{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);border-radius:.5rem;padding:.4rem .875rem;font-size:.8rem;cursor:pointer;font-family:'Prompt',sans-serif;transition:all .2s}
+    .g-gb:hover,.g-gb.active{background:rgba(102,126,234,.5);border-color:#667eea;color:white}
+    .g-sort{background:rgba(255,255,255,.08);color:white;border:1px solid rgba(255,255,255,.15);border-radius:.5rem;padding:.4rem .75rem;font-family:'Prompt',sans-serif;font-size:.8rem;cursor:pointer}
+    .g-close{background:rgba(239,68,68,.2);color:#FCA5A5;border:1px solid rgba(239,68,68,.3);border-radius:.5rem;padding:.4rem 1rem;font-size:.875rem;cursor:pointer;font-family:'Prompt',sans-serif;transition:all .2s;white-space:nowrap}
+    .g-close:hover{background:rgba(239,68,68,.4)}
+
+    /* Gallery Body */
+    .g-body{flex:1;overflow-y:auto;padding:1rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+    .g-body::-webkit-scrollbar{width:4px}
+    .g-body::-webkit-scrollbar-thumb{background:#667eea;border-radius:2px}
+
+    /* My Cam Strip */
+    .my-strip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:.875rem;padding:.875rem 1.25rem;display:flex;align-items:flex-start;gap:1.25rem;flex-shrink:0}
+    .my-strip-dot{width:6px;height:6px;background:#22C55E;border-radius:50%;animation:blink 1.5s infinite}
+    .my-strip-lbl{color:rgba(255,255,255,.45);font-size:.75rem;display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem}
+    .my-vid-box{border-radius:.75rem;overflow:hidden;border:2px solid #22C55E;position:relative;flex-shrink:0}
+    .my-vid-box video{width:180px;height:135px;object-fit:cover;display:block;transform:scaleX(-1)}
+    .my-vid-tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);padding:.25rem .5rem;display:flex;align-items:center;gap:.35rem}
+    .my-vid-dot{width:5px;height:5px;border-radius:50%;background:#22C55E;animation:blink 1.5s infinite}
+    .my-strip-info{color:rgba(255,255,255,.45);font-size:.775rem;line-height:1.9}
+    .my-strip-info span{display:block}
+
+    /* Stream Grid */
+    .s-grid{display:grid;gap:.875rem;align-content:start}
+    .s-grid.c1{grid-template-columns:1fr}
+    .s-grid.c2{grid-template-columns:repeat(2,1fr)}
+    .s-grid.c3{grid-template-columns:repeat(3,1fr)}
+    .s-grid.c4{grid-template-columns:repeat(4,1fr)}
+    .s-grid.c6{grid-template-columns:repeat(6,1fr)}
+
+    /* Stream Card */
+    .s-card{background:#0f0f24;border-radius:.875rem;overflow:hidden;border:2px solid rgba(255,255,255,.06);transition:all .25s;position:relative;cursor:pointer}
+    .s-card:hover{border-color:rgba(102,126,234,.5);transform:scale(1.015);box-shadow:0 6px 24px rgba(102,126,234,.25)}
+    .s-card.me{border-color:#667eea;box-shadow:0 0 20px rgba(102,126,234,.35)}
+    .s-card.g1{border-color:#FFD700;box-shadow:0 0 18px rgba(255,215,0,.3)}
+    .s-card.g2{border-color:#C0C0C0;box-shadow:0 0 14px rgba(192,192,192,.2)}
+    .s-card.g3{border-color:#CD7F32;box-shadow:0 0 14px rgba(205,127,50,.2)}
+
+    /* Video Wrap */
+    .sv-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#070714;overflow:hidden}
+    .sv{width:100%;height:100%;object-fit:cover;display:block}
+    .sv.mir{transform:scaleX(-1)}
+
+    /* Placeholder */
+    .sv-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f0f24,#1a0f3e);gap:.625rem}
+    .sv-av{width:50%;max-width:80px;aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid rgba(255,255,255,.15)}
+    .sv-av svg{width:75%;height:75%}
+    .sv-ph-name{color:rgba(255,255,255,.7);font-size:.8rem;font-weight:600;font-family:'Prompt',sans-serif}
+    .sv-ph-status{color:rgba(255,255,255,.3);font-size:.7rem}
+
+    /* Overlays on card */
+    .s-rank{position:absolute;top:.5rem;left:.5rem;z-index:5;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem}
+    .s-rank.r1{background:#FFD700;color:#92400E}
+    .s-rank.r2{background:#C0C0C0;color:#374151}
+    .s-rank.r3{background:#CD7F32;color:white}
+    .s-rank.rn{background:rgba(0,0,0,.6);color:rgba(255,255,255,.65);backdrop-filter:blur(4px);font-size:.65rem}
+    .s-me-tag{position:absolute;top:.5rem;left:.5rem;z-index:5;background:#667eea;color:white;font-size:.6rem;font-weight:700;padding:.15rem .45rem;border-radius:.4rem;font-family:'Prompt',sans-serif}
+    .s-ex-tag{position:absolute;top:.5rem;right:.5rem;z-index:5;background:rgba(0,0,0,.65);color:white;font-size:.65rem;padding:.2rem .5rem;border-radius:.45rem;backdrop-filter:blur(4px);font-family:'Prompt',sans-serif;white-space:nowrap;max-width:55%;overflow:hidden;text-overflow:ellipsis}
+    .s-live-tag{position:absolute;top:.5rem;left:.5rem;z-index:5;display:flex;align-items:center;gap:.3rem;background:rgba(239,68,68,.85);color:white;font-size:.6rem;font-weight:700;padding:.2rem .45rem;border-radius:.4rem}
+    .s-live-d{width:5px;height:5px;border-radius:50%;background:white;animation:blink 1s infinite}
+
+    /* Connecting spinner overlay */
+    .s-conn{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;z-index:4}
+    .s-conn-spin{width:28px;height:28px;border:3px solid rgba(255,255,255,.2);border-top-color:white;border-radius:50%;animation:rot .8s linear infinite}
+    .s-conn-txt{color:rgba(255,255,255,.7);font-size:.75rem;font-family:'Prompt',sans-serif}
+
+    /* Info bar bottom of card */
+    .s-info{padding:.5rem .75rem;display:flex;align-items:center;justify-content:space-between;background:#070714}
+    .s-info-l{display:flex;align-items:center;gap:.5rem;min-width:0}
+    .s-av-sm{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.08);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+    .s-av-sm svg{width:18px;height:18px}
+    .s-name{color:rgba(255,255,255,.85);font-size:.775rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
+    .s-dept{color:rgba(255,255,255,.3);font-size:.65rem;margin-top:.05rem}
+    .s-pill{font-size:.75rem;font-weight:700;padding:.2rem .5rem;border-radius:.4rem;white-space:nowrap;flex-shrink:0}
+    .sp-ex{background:rgba(16,185,129,.25);color:#6EE7B7}
+    .sp-good{background:rgba(59,130,246,.25);color:#93C5FD}
+    .sp-warn{background:rgba(245,158,11,.25);color:#FCD34D}
+    .sp-def{background:rgba(102,126,234,.2);color:#A5B4FC}
+
+    /* WebRTC status footer */
+    .g-status{background:#0a0a1e;border-top:1px solid rgba(255,255,255,.05);padding:.5rem 1.5rem;display:flex;align-items:center;gap:1.5rem;flex-shrink:0;flex-wrap:wrap}
+    .g-stat{display:flex;align-items:center;gap:.4rem;color:rgba(255,255,255,.4);font-size:.75rem}
+    .g-stat-d{width:7px;height:7px;border-radius:50%}
+    .gd-green{background:#22C55E}.gd-yellow{background:#F59E0B}.gd-red{background:#EF4444}
+
+    /* Spotlight */
+    .spot-bg{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999999;display:flex;align-items:center;justify-content:center;padding:2rem;cursor:pointer}
+    .spot-card{background:#0f0f24;border-radius:1.5rem;max-width:680px;width:100%;overflow:hidden;border:2px solid rgba(102,126,234,.4);cursor:default}
+    .spot-vid-wrap{width:100%;aspect-ratio:16/9;background:#070714;position:relative;overflow:hidden}
+    .spot-vid{width:100%;height:100%;object-fit:cover}
+    .spot-vid.mir{transform:scaleX(-1)}
+
+    /* Empty */
+    .g-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.25);gap:1rem;padding:5rem;text-align:center;grid-column:1/-1}
+    .g-empty-icon{font-size:4rem}
+
+    /* Scrollbars */
+    .lb-list::-webkit-scrollbar,.live-list::-webkit-scrollbar,.feed-list::-webkit-scrollbar{width:4px}
+    .lb-list::-webkit-scrollbar-thumb,.live-list::-webkit-scrollbar-thumb,.feed-list::-webkit-scrollbar-thumb{background:#667eea;border-radius:2px}
+
+    @media(max-width:1200px){.game-layout{grid-template-columns:1.5fr 1fr}.comm-section{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}}
+    @media(max-width:768px){.game-layout{grid-template-columns:1fr}.comm-section{grid-template-columns:1fr}.s-grid.c3,.s-grid.c4{grid-template-columns:repeat(2,1fr)}.s-grid.c6{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:480px){.s-grid.c2,.s-grid.c3,.s-grid.c4,.s-grid.c6{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-
-<!-- ===== LOGIN SCREEN ===== -->
+<!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-logo">🏋️</div>
     <h1 class="login-title">Office Syndrome Game</h1>
-    <p class="login-subtitle">แข่งขันกับผู้เล่นทั่วโลก!</p>
-
-    <div class="online-badge">
-      <div class="online-dot"></div>
-      <span id="onlineCountBadge">กำลังโหลด...</span>
-    </div>
-
-    <div class="input-group">
-      <label>👤 ชื่อผู้เล่น</label>
-      <input type="text" id="usernameInput" placeholder="ใส่ชื่อของคุณ..." maxlength="20">
-    </div>
-
-    <div class="input-group">
-      <label>🏢 แผนก / ทีม (ไม่บังคับ)</label>
-      <input type="text" id="departmentInput" placeholder="เช่น HR, Engineering, Sales..." maxlength="30">
-    </div>
-
+    <p class="login-subtitle">แข่งขันกัน Live Streaming จริงๆ — WebRTC P2P!</p>
+    <div class="online-badge"><div class="online-dot"></div><span id="onlineBadge">กำลังโหลด...</span></div>
+    <div class="input-group"><label>👤 ชื่อผู้เล่น</label><input type="text" id="nameIn" placeholder="ใส่ชื่อของคุณ..." maxlength="20"></div>
+    <div class="input-group"><label>🏢 แผนก (ไม่บังคับ)</label><input type="text" id="deptIn" placeholder="เช่น HR, Engineering..." maxlength="30"></div>
     <div class="input-group">
       <div class="avatar-section-label">🎨 เลือกตัวละคร</div>
-      <div class="avatar-grid" id="avatarGrid"></div>
+      <div class="avatar-grid" id="avGrid"></div>
     </div>
-
-    <!-- Selected Preview -->
-    <div class="selected-avatar-display" id="selectedAvatarDisplay">
-      <div class="selected-avatar-preview" id="selectedAvatarPreview"></div>
-      <div class="selected-avatar-info">
-        <div class="selected-avatar-name" id="selectedAvatarName">เลือกตัวละครของคุณ</div>
-        <div class="selected-avatar-desc" id="selectedAvatarDesc">คลิกที่ตัวละครด้านบน</div>
-      </div>
+    <div class="selected-av-box">
+      <div class="selected-av-preview" id="selAvPrev"></div>
+      <div><div class="selected-av-name" id="selAvName">เลือกตัวละคร</div><div class="selected-av-desc" id="selAvDesc">คลิกที่ตัวละครด้านบน</div></div>
     </div>
-
     <button class="btn-login" onclick="handleLogin()">🎮 เข้าร่วมการแข่งขัน!</button>
   </div>
 </div>
 
-<!-- ===== EXERCISE PREVIEW ===== -->
-<div class="exercise-preview-overlay" id="exercisePreview">
-  <div class="preview-content">
-    <div class="preview-header">
-      <div class="preview-number" id="previewNumber">ท่าที่ 1/8</div>
-      <h2 class="preview-title" id="previewTitle">Neck Stretch</h2>
-      <p class="preview-subtitle" id="previewSubtitle">ยืดกล้ามเนื้อคอ</p>
+<!-- EXERCISE PREVIEW -->
+<div class="prev-overlay" id="prevOverlay">
+  <div class="prev-card">
+    <div class="prev-hdr">
+      <div class="prev-num" id="prevNum">ท่าที่ 1/8</div>
+      <h2 class="prev-title" id="prevTitle"></h2>
+      <p class="prev-sub" id="prevSub"></p>
     </div>
-    <div class="preview-body">
-      <div class="preview-image-container">
-        <img id="previewImage" class="preview-image" src="" alt="" style="opacity:0;">
-        <div class="image-loading" id="imageLoading">⏳</div>
+    <div class="prev-body">
+      <div class="prev-img-wrap">
+        <img id="prevImg" class="prev-img" src="" alt="" style="opacity:0">
+        <div class="img-load" id="imgLoad">⏳</div>
       </div>
-      <div class="preview-description">
-        <div class="preview-desc-title">📋 วิธีการทำ</div>
-        <div class="preview-desc-text" id="previewDescription"></div>
-      </div>
-      <div class="preview-countdown" id="previewCountdown" style="display:none;">
-        <div class="countdown-label">เริ่มใน</div>
-        <div class="countdown-value" id="previewCountdownValue">3</div>
-      </div>
+      <div class="prev-desc"><div class="prev-desc-ttl">📋 วิธีการทำ</div><div class="prev-desc-txt" id="prevDescTxt"></div></div>
+      <div class="prev-cd" id="prevCd" style="display:none"><div class="cd-lbl">เริ่มใน</div><div class="cd-val" id="cdVal">3</div></div>
     </div>
-    <div class="preview-actions">
-      <button class="preview-btn btn-skip-preview" onclick="skipPreview()">⏭️ ข้าม</button>
-      <button class="preview-btn btn-start-exercise" onclick="startExerciseFromPreview()">🏋️ เริ่มท่านี้!</button>
+    <div class="prev-actions">
+      <button class="prev-btn pb-skip" onclick="skipPrev()">⏭️ ข้าม</button>
+      <button class="prev-btn pb-start" onclick="startFromPrev()">🏋️ เริ่มท่านี้!</button>
     </div>
   </div>
 </div>
 
-<!-- ===== TUTORIAL ===== -->
-<div class="tutorial-modal" id="tutorialModal" style="display:none;">
-  <div class="tutorial-content">
-    <div class="tutorial-header">
-      <h2>🏋️ รู้จักกับ 8 ท่ายืดเหยียด</h2>
-      <p>เรียนรู้ท่าออกกำลังกายก่อนเริ่มเกม</p>
-    </div>
-    <div class="tutorial-body">
-      <div id="exerciseCarousel"></div>
-      <div class="carousel-controls">
-        <button class="carousel-btn" id="prevBtn" onclick="changeSlide(-1)">← ก่อนหน้า</button>
-        <div class="carousel-indicators" id="indicators"></div>
-        <button class="carousel-btn" id="nextBtn" onclick="changeSlide(1)">ถัดไป →</button>
+<!-- TUTORIAL -->
+<div class="tut-modal" id="tutModal" style="display:none">
+  <div class="tut-card">
+    <div class="tut-hdr"><h2>🏋️ รู้จักกับ 8 ท่ายืดเหยียด</h2><p>เรียนรู้ท่าออกกำลังกายก่อนเริ่มเกม</p></div>
+    <div class="tut-body">
+      <div id="tutCarousel"></div>
+      <div class="c-controls">
+        <button class="c-btn" id="prevBtn" onclick="changeSlide(-1)">← ก่อนหน้า</button>
+        <div class="c-dots" id="tutDots"></div>
+        <button class="c-btn" id="nextBtn" onclick="changeSlide(1)">ถัดไป →</button>
       </div>
     </div>
-    <div class="tutorial-footer">
-      <button class="btn btn-skip" onclick="skipTutorial()">ข้ามการสอน</button>
-      <button class="btn btn-start" onclick="completeTutorial()">🎮 เริ่มเล่นเลย!</button>
+    <div class="tut-footer">
+      <button class="btn btn-tskip" onclick="skipTut()">ข้ามการสอน</button>
+      <button class="btn btn-tstart" onclick="doneTut()">🎮 เริ่มเล่นเลย!</button>
     </div>
   </div>
 </div>
 
-<!-- ===== TOAST ===== -->
-<div class="toast-container" id="toastContainer"></div>
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
 
-<!-- ===== MAIN GAME ===== -->
+<!-- GALLERY FLOAT BTN -->
+<button class="g-float" id="gFloat" onclick="openGallery()">
+  🎥 Live Stream <div class="g-float-cnt" id="gFloatCnt">0</div>
+</button>
+
+<!-- GALLERY MODAL -->
+<div class="g-modal" id="gModal">
+  <div class="g-topbar">
+    <div class="g-topbar-l">
+      <div class="g-topbar-title">
+        🎥 Live Stream Gallery
+        <div class="g-live-pill"><div class="g-live-d"></div>LIVE · <span id="gLiveCnt">0</span> คน</div>
+      </div>
+    </div>
+    <div class="g-topbar-r">
+      <button class="g-gb" id="gb1" onclick="setGCols(1)">▣ 1</button>
+      <button class="g-gb" id="gb2" onclick="setGCols(2)">⊞ 2</button>
+      <button class="g-gb active" id="gb3" onclick="setGCols(3)">⊞ 3</button>
+      <button class="g-gb" id="gb4" onclick="setGCols(4)">⊞ 4</button>
+      <button class="g-gb" id="gb6" onclick="setGCols(6)">⊞ 6</button>
+      <select class="g-sort" id="gSort" onchange="renderGrid()">
+        <option value="score">เรียงตาม คะแนน</option>
+        <option value="name">เรียงตาม ชื่อ</option>
+        <option value="joined">เรียงตาม เวลาเข้าร่วม</option>
+      </select>
+      <button class="g-close" onclick="closeGallery()">✕ ปิด (ESC)</button>
+    </div>
+  </div>
+
+  <div class="g-body" id="gBody">
+    <!-- My cam strip -->
+    <div class="my-strip" id="myStrip" style="display:none">
+      <div>
+        <div class="my-strip-lbl"><div class="my-strip-dot"></div>กล้องของคุณ (เฉพาะคุณเห็น)</div>
+        <div class="my-vid-box">
+          <video id="myStripVid" autoplay playsinline muted></video>
+          <div class="my-vid-tag">
+            <div class="my-vid-dot"></div>
+            <span id="myVidName" style="color:white;font-size:.7rem;font-weight:600"></span>
+          </div>
+        </div>
+      </div>
+      <div class="my-strip-info">
+        <span>⚡ WebRTC Peer-to-Peer — Real-time &lt;100ms</span>
+        <span>🔒 ส่งตรงถึงกัน ไม่ผ่าน Server กลาง</span>
+        <span>📡 Firebase ทำแค่ Signaling เท่านั้น</span>
+        <span id="peerCountTxt" style="color:rgba(102,126,234,.9)">🔗 เชื่อมต่อแล้ว 0 คน</span>
+      </div>
+    </div>
+    <!-- Stream grid -->
+    <div class="s-grid c3" id="sGrid">
+      <div class="g-empty"><div class="g-empty-icon">🎥</div><div style="font-weight:700">รอผู้เล่น Live เข้าร่วม...</div><div style="font-size:.875rem;opacity:.55">กด G หรือคลิกปุ่มเพื่อเปิด Gallery</div></div>
+    </div>
+  </div>
+
+  <div class="g-status">
+    <div class="g-stat"><div class="g-stat-d gd-green"></div><span id="wConnected">เชื่อมต่อ: 0</span></div>
+    <div class="g-stat"><div class="g-stat-d gd-yellow"></div><span id="wConnecting">กำลังเชื่อม: 0</span></div>
+    <div class="g-stat"><div class="g-stat-d gd-red"></div><span id="wFailed">ล้มเหลว: 0</span></div>
+    <div class="g-stat" style="margin-left:auto;color:rgba(255,255,255,.25)">WebRTC P2P · Firebase Signaling · กด G เปิด/ปิด</div>
+  </div>
+</div>
+
+<!-- MAIN GAME -->
 <div class="game-container">
   <div class="header">
     <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
     <div class="header-center">
-      <div class="header-avatar-wrap" id="headerAvatarWrap"></div>
-      <div>
-        <div class="header-username" id="headerUsername">ผู้เล่น</div>
-        <div style="font-size:0.75rem;opacity:0.85;" id="headerDept">—</div>
-      </div>
+      <div class="header-av-wrap" id="hAvWrap"></div>
+      <div><div class="header-username" id="hName">ผู้เล่น</div><div style="font-size:.75rem;opacity:.85" id="hDept">—</div></div>
     </div>
     <div class="header-right">
-      <div class="stat-pill">🔥 Streak: <span id="streak">0</span></div>
-      <div class="stat-pill">💎 <span id="totalPoints">0</span> pts</div>
-      <div class="stat-pill">🏆 อันดับ <span id="myRankPill">#—</span></div>
+      <div class="stat-pill">🔥 <span id="streak">0</span></div>
+      <div class="stat-pill">💎 <span id="pts">0</span> pts</div>
+      <div class="stat-pill">🏆 <span id="rankPill">#—</span></div>
+      <button class="live-btn" onclick="openGallery()">🎥 Live <div class="live-badge" id="hGCnt">0</div></button>
     </div>
   </div>
 
   <div class="game-layout">
-    <!-- VIDEO -->
     <div class="video-section">
       <div id="webcam-container">
         <video id="webcam" autoplay playsinline></video>
         <canvas id="canvas"></canvas>
-        <div class="camera-overlay" id="cameraOverlay">
+        <div class="cam-overlay" id="camOverlay">
           <div class="overlay-content">
-            <div style="font-size:2.5rem;margin-bottom:1rem;">📸</div>
-            <div style="margin-bottom:0.5rem;">กรุณาอนุญาตการใช้กล้อง</div>
-            <button onclick="startCamera()">🎥 เริ่มใช้กล้อง</button>
-            <button onclick="startDemoMode()">🎮 โหมดทดสอบ</button>
+            <div style="font-size:2.5rem;margin-bottom:1rem">📸</div>
+            <div style="margin-bottom:.5rem">กรุณาอนุญาตการใช้กล้อง</div>
+            <button onclick="startCamera()">🎥 เริ่มใช้กล้อง (แนะนำ — ส่ง Live ได้)</button>
+            <button onclick="startDemo()">🎮 โหมดทดสอบ (ไม่มีกล้อง)</button>
           </div>
         </div>
       </div>
       <div class="controls">
-        <button class="btn btn-secondary" onclick="pauseGame()" id="pauseBtn">⏸️ หยุดชั่วคราว</button>
-        <button class="btn btn-primary" onclick="skipExercise()">⏭️ ข้ามท่านี้</button>
+        <button class="btn btn-s" onclick="pauseGame()" id="pauseBtn">⏸️ หยุดชั่วคราว</button>
+        <button class="btn btn-p" onclick="skipEx()">⏭️ ข้ามท่านี้</button>
       </div>
     </div>
 
-    <!-- STATS -->
     <div class="stats-section">
       <div class="stat-card">
         <h3>📊 ความคืบหน้า</h3>
         <div class="progress-bar">
-          <div class="progress-label">
-            <span>ท่าที่ทำแล้ว</span>
-            <span><span id="currentExercise">0</span>/8</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" id="progressFill" style="width:0%"></div>
-          </div>
+          <div class="progress-label"><span>ท่าที่ทำแล้ว</span><span><span id="curEx">0</span>/8</span></div>
+          <div class="progress-track"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
         </div>
-        <div class="exercise-title" id="exerciseTitle">เตรียมตัว...</div>
-        <div class="exercise-desc" id="exerciseDesc">กรุณาเริ่มกล้องเพื่อเล่น</div>
-        <div class="timer">
-          <div class="timer-value" id="timerValue">20</div>
-          <div class="timer-label">วินาที</div>
-        </div>
+        <div class="ex-title" id="exTitle">เตรียมตัว...</div>
+        <div class="ex-desc" id="exDesc">กรุณาเริ่มกล้องเพื่อเล่น</div>
+        <div class="timer"><div class="timer-val" id="timerVal">20</div><div class="timer-lbl">วินาที</div></div>
       </div>
       <div class="stat-card">
         <h3>🎯 ความแม่นยำ</h3>
-        <div class="accuracy-display">
-          <div class="accuracy-value" id="accuracyValue">0%</div>
-          <div class="accuracy-status status-good" id="accuracyStatus">พร้อมเริ่มต้น</div>
-        </div>
-        <div class="feedback-box" id="feedbackBox" style="display:none;">
-          <div class="feedback-text" id="feedbackText"></div>
-        </div>
+        <div class="acc-display"><div class="acc-val" id="accVal">0%</div><div class="acc-status s-good" id="accStatus">พร้อมเริ่มต้น</div></div>
+        <div class="feedback-box" id="fbBox" style="display:none"><div class="feedback-text" id="fbTxt"></div></div>
       </div>
-      <div class="stat-card">
-        <h3>💪 รายการท่า</h3>
-        <ul class="exercise-list" id="exerciseList"></ul>
-      </div>
+      <div class="stat-card"><h3>💪 รายการท่า</h3><ul class="ex-list" id="exList"></ul></div>
     </div>
 
-    <!-- COMMUNITY -->
-    <div class="community-section">
-      <div class="live-players-card">
-        <div class="live-header">
-          <div class="live-title">🔴 กำลังเล่นอยู่</div>
-          <div class="live-count" id="liveCount">0</div>
-        </div>
-        <div class="live-list" id="liveList">
-          <div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">รอผู้เล่น...</div>
-        </div>
+    <div class="comm-section">
+      <div class="live-card">
+        <div class="live-header"><div class="live-title">🔴 กำลังเล่นอยู่</div><div class="live-cnt" id="liveCnt">0</div></div>
+        <div class="live-list" id="liveList"><div style="text-align:center;color:#94A3B8;font-size:.875rem;padding:1rem">รอผู้เล่น...</div></div>
       </div>
-
-      <div class="leaderboard-card">
-        <div class="lb-header">
-          <div class="lb-title">🏆 Leaderboard</div>
+      <div class="lb-card">
+        <div class="lb-hdr">
+          <div class="lb-ttl">🏆 Leaderboard</div>
           <div class="lb-tabs">
             <button class="lb-tab active" id="tabToday" onclick="switchTab('today')">วันนี้</button>
             <button class="lb-tab" id="tabWeek" onclick="switchTab('week')">สัปดาห์</button>
             <button class="lb-tab" id="tabAll" onclick="switchTab('all')">ตลอดกาล</button>
           </div>
         </div>
-        <div class="my-rank-banner">
-          <div class="my-rank-left">
-            <div class="banner-avatar-wrap" id="bannerAvatarWrap"></div>
-            <div>
-              <div style="font-size:0.75rem;opacity:0.85;">อันดับของฉัน</div>
-              <div class="my-rank-number">#<span id="bannerRank">—</span></div>
-            </div>
-          </div>
-          <div style="text-align:right;">
-            <div class="my-rank-points" id="bannerPoints">0 pts</div>
-            <div style="font-size:0.75rem;opacity:0.85;">คะแนนสะสม</div>
-          </div>
+        <div class="rank-banner">
+          <div class="rb-left"><div class="rb-av" id="rbAv"></div><div><div style="font-size:.75rem;opacity:.85">อันดับของฉัน</div><div class="rb-rank">#<span id="rbRank">—</span></div></div></div>
+          <div style="text-align:right"><div class="rb-pts" id="rbPts">0 pts</div><div style="font-size:.75rem;opacity:.85">คะแนนสะสม</div></div>
         </div>
-        <div class="lb-list" id="lbList">
-          <div style="text-align:center;color:#94A3B8;padding:2rem;font-size:0.875rem;">กำลังโหลด...</div>
-        </div>
+        <div class="lb-list" id="lbList"><div style="text-align:center;color:#94A3B8;padding:2rem;font-size:.875rem">กำลังโหลด...</div></div>
       </div>
-
       <div class="feed-card">
-        <h3 style="color:#334155;margin-bottom:1rem;font-size:1rem;">📣 กิจกรรมล่าสุด</h3>
-        <div class="feed-list" id="feedList">
-          <div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">รอกิจกรรม...</div>
-        </div>
+        <h3 style="color:#334155;margin-bottom:1rem;font-size:1rem">📣 กิจกรรมล่าสุด</h3>
+        <div class="feed-list" id="feedList"><div style="text-align:center;color:#94A3B8;font-size:.875rem;padding:1rem">รอกิจกรรม...</div></div>
       </div>
     </div>
   </div>
@@ -743,1154 +549,801 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
 
 <script>
-// ============================================================
-// CARTOON AVATARS — SVG น่ารัก 12 ตัว
-// ============================================================
-const cartoonAvatars = [
-  {
-    id: 'cat',
-    name: 'แมวส้ม',
-    desc: 'สายนอน แต่ออกกำลังได้!',
-    color: '#FF8C42',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="30" cy="32" r="20" fill="#FF8C42"/>
-      <ellipse cx="30" cy="44" rx="13" ry="8" fill="#FFB07A"/>
-      <!-- ears -->
-      <polygon points="14,16 10,4 22,14" fill="#FF8C42"/>
-      <polygon points="46,16 50,4 38,14" fill="#FF8C42"/>
-      <polygon points="15,15 12,7 21,14" fill="#FFB07A"/>
-      <polygon points="45,15 48,7 39,14" fill="#FFB07A"/>
-      <!-- eyes -->
-      <ellipse cx="23" cy="30" rx="4" ry="4.5" fill="white"/>
-      <ellipse cx="37" cy="30" rx="4" ry="4.5" fill="white"/>
-      <circle cx="23" cy="31" r="2.5" fill="#2D1B00"/>
-      <circle cx="37" cy="31" r="2.5" fill="#2D1B00"/>
-      <circle cx="24" cy="30" r="1" fill="white"/>
-      <circle cx="38" cy="30" r="1" fill="white"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="36" rx="2" ry="1.5" fill="#FF6B9D"/>
-      <!-- mouth -->
-      <path d="M27,38 Q30,41 33,38" stroke="#2D1B00" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-      <!-- whiskers -->
-      <line x1="10" y1="35" x2="22" y2="36.5" stroke="#2D1B00" stroke-width="0.8"/>
-      <line x1="10" y1="38" x2="22" y2="38" stroke="#2D1B00" stroke-width="0.8"/>
-      <line x1="38" y1="36.5" x2="50" y2="35" stroke="#2D1B00" stroke-width="0.8"/>
-      <line x1="38" y1="38" x2="50" y2="38" stroke="#2D1B00" stroke-width="0.8"/>
-    </svg>`
-  },
-  {
-    id: 'bear',
-    name: 'หมีน้ำตาล',
-    desc: 'แข็งแกร่งและน่ารัก',
-    color: '#8B6914',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="30" cy="33" r="19" fill="#C4952A"/>
-      <!-- ears -->
-      <circle cx="14" cy="16" r="7" fill="#C4952A"/>
-      <circle cx="46" cy="16" r="7" fill="#C4952A"/>
-      <circle cx="14" cy="16" r="4" fill="#E8B84B"/>
-      <circle cx="46" cy="16" r="4" fill="#E8B84B"/>
-      <!-- face -->
-      <ellipse cx="30" cy="38" rx="11" ry="8" fill="#E8B84B"/>
-      <!-- eyes -->
-      <circle cx="23" cy="30" r="4" fill="white"/>
-      <circle cx="37" cy="30" r="4" fill="white"/>
-      <circle cx="23" cy="31" r="2.5" fill="#1A0A00"/>
-      <circle cx="37" cy="31" r="2.5" fill="#1A0A00"/>
-      <circle cx="24" cy="30" r="1" fill="white"/>
-      <circle cx="38" cy="30" r="1" fill="white"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="36" rx="3" ry="2" fill="#1A0A00"/>
-      <!-- mouth -->
-      <path d="M26,39 Q30,43 34,39" stroke="#1A0A00" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'bunny',
-    name: 'กระต่ายขาว',
-    desc: 'กระโดดไว ยืดหยุ่นดี',
-    color: '#E8E8E8',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- ears -->
-      <ellipse cx="21" cy="12" rx="5" ry="12" fill="#F0F0F0"/>
-      <ellipse cx="39" cy="12" rx="5" ry="12" fill="#F0F0F0"/>
-      <ellipse cx="21" cy="12" rx="2.5" ry="9" fill="#FFB3C6"/>
-      <ellipse cx="39" cy="12" rx="2.5" ry="9" fill="#FFB3C6"/>
-      <!-- head -->
-      <circle cx="30" cy="34" r="19" fill="#F5F5F5"/>
-      <!-- cheeks -->
-      <ellipse cx="19" cy="38" rx="5" ry="3.5" fill="#FFD1DC" opacity="0.6"/>
-      <ellipse cx="41" cy="38" rx="5" ry="3.5" fill="#FFD1DC" opacity="0.6"/>
-      <!-- eyes -->
-      <circle cx="23" cy="31" r="4" fill="white"/>
-      <circle cx="37" cy="31" r="4" fill="white"/>
-      <circle cx="23" cy="32" r="2.5" fill="#5B6EF5"/>
-      <circle cx="37" cy="32" r="2.5" fill="#5B6EF5"/>
-      <circle cx="24" cy="31" r="1" fill="white"/>
-      <circle cx="38" cy="31" r="1" fill="white"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="37" rx="2" ry="1.5" fill="#FF8FAB"/>
-      <!-- mouth -->
-      <path d="M27,39.5 Q30,43 33,39.5" stroke="#FF8FAB" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'fox',
-    name: 'จิ้งจอกแดง',
-    desc: 'ฉลาดและคล่องแคล่ว',
-    color: '#E8521A',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- ears -->
-      <polygon points="14,22 8,4 24,18" fill="#E8521A"/>
-      <polygon points="46,22 52,4 36,18" fill="#E8521A"/>
-      <polygon points="15,21 10,8 23,18" fill="#FFD4A3"/>
-      <polygon points="45,21 50,8 37,18" fill="#FFD4A3"/>
-      <!-- head -->
-      <circle cx="30" cy="33" r="19" fill="#E8521A"/>
-      <!-- white face -->
-      <ellipse cx="30" cy="38" rx="13" ry="10" fill="#FFF5E8"/>
-      <!-- cheeks -->
-      <ellipse cx="18" cy="36" rx="4" ry="3" fill="#FF8C5A" opacity="0.5"/>
-      <ellipse cx="42" cy="36" rx="4" ry="3" fill="#FF8C5A" opacity="0.5"/>
-      <!-- eyes -->
-      <ellipse cx="23" cy="30" rx="4" ry="4" fill="white"/>
-      <ellipse cx="37" cy="30" rx="4" ry="4" fill="white"/>
-      <circle cx="23" cy="31" r="2.5" fill="#1A0A00"/>
-      <circle cx="37" cy="31" r="2.5" fill="#1A0A00"/>
-      <circle cx="24" cy="30" r="1" fill="white"/>
-      <circle cx="38" cy="30" r="1" fill="white"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#1A0A00"/>
-      <!-- mouth -->
-      <path d="M27,39 Q30,42 33,39" stroke="#1A0A00" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'panda',
-    name: 'แพนด้า',
-    desc: 'ขี้เซาแต่ทำได้ทุกท่า',
-    color: '#333333',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- ears -->
-      <circle cx="14" cy="16" r="8" fill="#333"/>
-      <circle cx="46" cy="16" r="8" fill="#333"/>
-      <!-- head -->
-      <circle cx="30" cy="33" r="19" fill="#F5F5F5"/>
-      <!-- eye patches -->
-      <ellipse cx="22" cy="29" rx="7" ry="6" fill="#333" transform="rotate(-15,22,29)"/>
-      <ellipse cx="38" cy="29" rx="7" ry="6" fill="#333" transform="rotate(15,38,29)"/>
-      <!-- eyes -->
-      <circle cx="22" cy="30" r="3.5" fill="white"/>
-      <circle cx="38" cy="30" r="3.5" fill="white"/>
-      <circle cx="22" cy="31" r="2" fill="#1A0A00"/>
-      <circle cx="38" cy="31" r="2" fill="#1A0A00"/>
-      <circle cx="23" cy="30" r="0.8" fill="white"/>
-      <circle cx="39" cy="30" r="0.8" fill="white"/>
-      <!-- nose area -->
-      <ellipse cx="30" cy="37" rx="9" ry="6" fill="#FFD4D4"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#333"/>
-      <!-- mouth -->
-      <path d="M27,39.5 Q30,43 33,39.5" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'penguin',
-    name: 'เพนกวิน',
-    desc: 'เย็นสบายทุกท่า',
-    color: '#2C3E7A',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- head -->
-      <circle cx="30" cy="28" r="18" fill="#2C3E7A"/>
-      <!-- white face -->
-      <ellipse cx="30" cy="31" rx="11" ry="13" fill="#F5F5F5"/>
-      <!-- eyes -->
-      <circle cx="24" cy="26" r="4.5" fill="white"/>
-      <circle cx="36" cy="26" r="4.5" fill="white"/>
-      <circle cx="24" cy="27" r="2.5" fill="#1A1A2E"/>
-      <circle cx="36" cy="27" r="2.5" fill="#1A1A2E"/>
-      <circle cx="25" cy="26" r="1" fill="white"/>
-      <circle cx="37" cy="26" r="1" fill="white"/>
-      <!-- beak -->
-      <ellipse cx="30" cy="33" rx="3.5" ry="2.5" fill="#FF9500"/>
-      <!-- cheeks -->
-      <ellipse cx="19" cy="31" rx="4" ry="3" fill="#FF6B8A" opacity="0.5"/>
-      <ellipse cx="41" cy="31" rx="4" ry="3" fill="#FF6B8A" opacity="0.5"/>
-      <!-- body hint -->
-      <ellipse cx="30" cy="54" rx="14" ry="8" fill="#2C3E7A"/>
-      <ellipse cx="30" cy="54" rx="9" ry="6" fill="#F5F5F5"/>
-    </svg>`
-  },
-  {
-    id: 'tiger',
-    name: 'เสือน้อย',
-    desc: 'แข็งแกร่งที่สุด!',
-    color: '#E8931A',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- ears -->
-      <polygon points="14,20 9,6 23,16" fill="#E8931A"/>
-      <polygon points="46,20 51,6 37,16" fill="#E8931A"/>
-      <polygon points="15,19 11,9 22,16" fill="#FFD4A3"/>
-      <polygon points="45,19 49,9 38,16" fill="#FFD4A3"/>
-      <!-- head -->
-      <circle cx="30" cy="33" r="19" fill="#E8931A"/>
-      <!-- stripes -->
-      <path d="M18,20 Q22,25 18,30" stroke="#C4640A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M42,20 Q38,25 42,30" stroke="#C4640A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <path d="M25,16 Q30,20 35,16" stroke="#C4640A" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <!-- face -->
-      <ellipse cx="30" cy="38" rx="13" ry="9" fill="#FFD4A3"/>
-      <!-- eyes -->
-      <circle cx="23" cy="30" r="4" fill="white"/>
-      <circle cx="37" cy="30" r="4" fill="white"/>
-      <circle cx="23" cy="31" r="2.5" fill="#1A6600"/>
-      <circle cx="37" cy="31" r="2.5" fill="#1A6600"/>
-      <circle cx="24" cy="30" r="1" fill="white"/>
-      <circle cx="38" cy="30" r="1" fill="white"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#CC3366"/>
-      <!-- mouth -->
-      <path d="M27,39 Q30,43 33,39" stroke="#CC3366" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'frog',
-    name: 'กบเขียว',
-    desc: 'กระโดดได้ทุกท่า!',
-    color: '#4CAF50',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- eye bumps -->
-      <circle cx="18" cy="18" r="9" fill="#4CAF50"/>
-      <circle cx="42" cy="18" r="9" fill="#4CAF50"/>
-      <!-- head -->
-      <circle cx="30" cy="34" r="19" fill="#5DBF61"/>
-      <!-- belly -->
-      <ellipse cx="30" cy="39" rx="13" ry="10" fill="#A5E6A8"/>
-      <!-- eyes -->
-      <circle cx="18" cy="18" r="6" fill="white"/>
-      <circle cx="42" cy="18" r="6" fill="white"/>
-      <circle cx="18" cy="19" r="3.5" fill="#1A4A00"/>
-      <circle cx="42" cy="19" r="3.5" fill="#1A4A00"/>
-      <circle cx="19" cy="18" r="1.2" fill="white"/>
-      <circle cx="43" cy="18" r="1.2" fill="white"/>
-      <!-- nostrils -->
-      <circle cx="27" cy="32" r="2" fill="#3A9A3E"/>
-      <circle cx="33" cy="32" r="2" fill="#3A9A3E"/>
-      <!-- smile -->
-      <path d="M20,39 Q30,47 40,39" stroke="#3A9A3E" stroke-width="2" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'chick',
-    name: 'ลูกไก่',
-    desc: 'ตัวเล็กแต่ใจสู้!',
-    color: '#FFD700',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- body -->
-      <circle cx="30" cy="36" r="18" fill="#FFE135"/>
-      <!-- head -->
-      <circle cx="30" cy="24" r="13" fill="#FFE135"/>
-      <!-- wing hints -->
-      <ellipse cx="13" cy="38" rx="6" ry="10" fill="#FFD700" transform="rotate(-20,13,38)"/>
-      <ellipse cx="47" cy="38" rx="6" ry="10" fill="#FFD700" transform="rotate(20,47,38)"/>
-      <!-- cheeks -->
-      <ellipse cx="20" cy="26" rx="4" ry="3" fill="#FFB3C6" opacity="0.6"/>
-      <ellipse cx="40" cy="26" rx="4" ry="3" fill="#FFB3C6" opacity="0.6"/>
-      <!-- eyes -->
-      <circle cx="24" cy="22" r="4" fill="white"/>
-      <circle cx="36" cy="22" r="4" fill="white"/>
-      <circle cx="24" cy="23" r="2.5" fill="#1A0A00"/>
-      <circle cx="36" cy="23" r="2.5" fill="#1A0A00"/>
-      <circle cx="25" cy="22" r="1" fill="white"/>
-      <circle cx="37" cy="22" r="1" fill="white"/>
-      <!-- beak -->
-      <polygon points="27,28 33,28 30,33" fill="#FF8C00"/>
-      <!-- hair -->
-      <ellipse cx="30" cy="11" rx="3" ry="6" fill="#FFD700" transform="rotate(0,30,14)"/>
-      <ellipse cx="24" cy="13" rx="2.5" ry="5" fill="#FFD700" transform="rotate(-20,24,13)"/>
-      <ellipse cx="36" cy="13" rx="2.5" ry="5" fill="#FFD700" transform="rotate(20,36,13)"/>
-    </svg>`
-  },
-  {
-    id: 'koala',
-    name: 'โคอาล่า',
-    desc: 'ผ่อนคลายทุกท่า',
-    color: '#708090',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- big ears -->
-      <circle cx="12" cy="19" r="11" fill="#A0A8B0"/>
-      <circle cx="48" cy="19" r="11" fill="#A0A8B0"/>
-      <circle cx="12" cy="19" r="7" fill="#C8D0D8"/>
-      <circle cx="48" cy="19" r="7" fill="#C8D0D8"/>
-      <!-- head -->
-      <circle cx="30" cy="34" r="18" fill="#A0A8B0"/>
-      <!-- face -->
-      <ellipse cx="30" cy="36" rx="12" ry="9" fill="#C8D0D8"/>
-      <!-- eyes -->
-      <circle cx="23" cy="30" r="4" fill="white"/>
-      <circle cx="37" cy="30" r="4" fill="white"/>
-      <circle cx="23" cy="31" r="2.5" fill="#2D3436"/>
-      <circle cx="37" cy="31" r="2.5" fill="#2D3436"/>
-      <circle cx="24" cy="30" r="1" fill="white"/>
-      <circle cx="38" cy="30" r="1" fill="white"/>
-      <!-- big nose -->
-      <ellipse cx="30" cy="36" rx="5" ry="4" fill="#5D6873"/>
-      <ellipse cx="29" cy="35.5" rx="2" ry="1.5" fill="#7A8590" opacity="0.5"/>
-      <!-- mouth -->
-      <path d="M26,41 Q30,45 34,41" stroke="#5D6873" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'hamster',
-    name: 'แฮมสเตอร์',
-    desc: 'วิ่งวงล้อทุกวัน!',
-    color: '#E8C49A',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- ears -->
-      <circle cx="16" cy="17" r="7" fill="#E8C49A"/>
-      <circle cx="44" cy="17" r="7" fill="#E8C49A"/>
-      <circle cx="16" cy="17" r="4.5" fill="#FFB3C6"/>
-      <circle cx="44" cy="17" r="4.5" fill="#FFB3C6"/>
-      <!-- head -->
-      <circle cx="30" cy="33" r="19" fill="#E8C49A"/>
-      <!-- chubby cheeks -->
-      <ellipse cx="13" cy="36" rx="8" ry="6" fill="#FFD4B0"/>
-      <ellipse cx="47" cy="36" rx="8" ry="6" fill="#FFD4B0"/>
-      <!-- face center -->
-      <ellipse cx="30" cy="38" rx="10" ry="7" fill="#FFD4B0"/>
-      <!-- eyes -->
-      <circle cx="23" cy="29" r="4.5" fill="white"/>
-      <circle cx="37" cy="29" r="4.5" fill="white"/>
-      <circle cx="23" cy="30" r="3" fill="#1A0A00"/>
-      <circle cx="37" cy="30" r="3" fill="#1A0A00"/>
-      <circle cx="24" cy="29" r="1.2" fill="white"/>
-      <circle cx="38" cy="29" r="1.2" fill="white"/>
-      <!-- nose -->
-      <ellipse cx="30" cy="35.5" rx="2" ry="1.5" fill="#FF8FAB"/>
-      <!-- mouth -->
-      <path d="M27,38 Q30,41.5 33,38" stroke="#CC6680" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    </svg>`
-  },
-  {
-    id: 'dinosaur',
-    name: 'ไดโนเขียว',
-    desc: 'แกร่งที่สุดในยุค!',
-    color: '#27AE60',
-    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- spikes -->
-      <polygon points="22,8 25,18 19,18" fill="#1E8449"/>
-      <polygon points="30,5 33,16 27,16" fill="#1E8449"/>
-      <polygon points="38,8 41,18 35,18" fill="#1E8449"/>
-      <!-- head -->
-      <ellipse cx="30" cy="32" rx="19" ry="17" fill="#2ECC71"/>
-      <!-- belly -->
-      <ellipse cx="30" cy="36" rx="12" ry="9" fill="#82E0AA"/>
-      <!-- eyes -->
-      <circle cx="22" cy="27" r="5" fill="white"/>
-      <circle cx="38" cy="27" r="5" fill="white"/>
-      <circle cx="22" cy="28" r="3" fill="#1A4A00"/>
-      <circle cx="38" cy="28" r="3" fill="#1A4A00"/>
-      <circle cx="23" cy="27" r="1.2" fill="white"/>
-      <circle cx="39" cy="27" r="1.2" fill="white"/>
-      <!-- nostrils -->
-      <circle cx="27" cy="33" r="1.5" fill="#1E8449"/>
-      <circle cx="33" cy="33" r="1.5" fill="#1E8449"/>
-      <!-- smile -->
-      <path d="M22,38 Q30,44 38,38" stroke="#1E8449" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      <!-- teeth -->
-      <rect x="26" y="38" width="3" height="3" rx="1" fill="white"/>
-      <rect x="31" y="38" width="3" height="3" rx="1" fill="white"/>
-    </svg>`
-  }
+// ═══════════════════════════════════════════════════
+// AVATARS
+// ═══════════════════════════════════════════════════
+const AVS=[
+  {id:'cat',name:'แมวส้ม',desc:'สายนอน แต่ออกกำลังได้!',svg:`<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="20" fill="#FF8C42"/><ellipse cx="30" cy="44" rx="13" ry="8" fill="#FFB07A"/><polygon points="14,16 10,4 22,14" fill="#FF8C42"/><polygon points="46,16 50,4 38,14" fill="#FF8C42"/><polygon points="15,15 12,7 21,14" fill="#FFB07A"/><polygon points="45,15 48,7 39,14" fill="#FFB07A"/><ellipse cx="23" cy="30" rx="4" ry="4.5" fill="white"/><ellipse cx="37" cy="30" rx="4" ry="4.5" fill="white"/><circle cx="23" cy="31" r="2.5" fill="#2D1B00"/><circle cx="37" cy="31" r="2.5" fill="#2D1B00"/><circle cx="24" cy="30" r="1" fill="white"/><circle cx="38" cy="30" r="1" fill="white"/><ellipse cx="30" cy="36" rx="2" ry="1.5" fill="#FF6B9D"/><path d="M27,38 Q30,41 33,38" stroke="#2D1B00" stroke-width="1.2" fill="none" stroke-linecap="round"/><line x1="10" y1="35" x2="22" y2="36.5" stroke="#2D1B00" stroke-width="0.8"/><line x1="10" y1="38" x2="22" y2="38" stroke="#2D1B00" stroke-width="0.8"/><line x1="38" y1="36.5" x2="50" y2="35" stroke="#2D1B00" stroke-width="0.8"/><line x1="38" y1="38" x2="50" y2="38" stroke="#2D1B00" stroke-width="0.8"/></svg>`},
+  {id:'bear',name:'หมีน้ำตาล',desc:'แข็งแกร่งและน่ารัก',svg:`<svg viewBox="0 0 60 60"><circle cx="30" cy="33" r="19" fill="#C4952A"/><circle cx="14" cy="16" r="7" fill="#C4952A"/><circle cx="46" cy="16" r="7" fill="#C4952A"/><circle cx="14" cy="16" r="4" fill="#E8B84B"/><circle cx="46" cy="16" r="4" fill="#E8B84B"/><ellipse cx="30" cy="38" rx="11" ry="8" fill="#E8B84B"/><circle cx="23" cy="30" r="4" fill="white"/><circle cx="37" cy="30" r="4" fill="white"/><circle cx="23" cy="31" r="2.5" fill="#1A0A00"/><circle cx="37" cy="31" r="2.5" fill="#1A0A00"/><circle cx="24" cy="30" r="1" fill="white"/><circle cx="38" cy="30" r="1" fill="white"/><ellipse cx="30" cy="36" rx="3" ry="2" fill="#1A0A00"/><path d="M26,39 Q30,43 34,39" stroke="#1A0A00" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'bunny',name:'กระต่ายขาว',desc:'กระโดดไว ยืดหยุ่นดี',svg:`<svg viewBox="0 0 60 60"><ellipse cx="21" cy="12" rx="5" ry="12" fill="#F0F0F0"/><ellipse cx="39" cy="12" rx="5" ry="12" fill="#F0F0F0"/><ellipse cx="21" cy="12" rx="2.5" ry="9" fill="#FFB3C6"/><ellipse cx="39" cy="12" rx="2.5" ry="9" fill="#FFB3C6"/><circle cx="30" cy="34" r="19" fill="#F5F5F5"/><ellipse cx="19" cy="38" rx="5" ry="3.5" fill="#FFD1DC" opacity="0.6"/><ellipse cx="41" cy="38" rx="5" ry="3.5" fill="#FFD1DC" opacity="0.6"/><circle cx="23" cy="31" r="4" fill="white"/><circle cx="37" cy="31" r="4" fill="white"/><circle cx="23" cy="32" r="2.5" fill="#5B6EF5"/><circle cx="37" cy="32" r="2.5" fill="#5B6EF5"/><circle cx="24" cy="31" r="1" fill="white"/><circle cx="38" cy="31" r="1" fill="white"/><ellipse cx="30" cy="37" rx="2" ry="1.5" fill="#FF8FAB"/><path d="M27,39.5 Q30,43 33,39.5" stroke="#FF8FAB" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'fox',name:'จิ้งจอกแดง',desc:'ฉลาดและคล่องแคล่ว',svg:`<svg viewBox="0 0 60 60"><polygon points="14,22 8,4 24,18" fill="#E8521A"/><polygon points="46,22 52,4 36,18" fill="#E8521A"/><polygon points="15,21 10,8 23,18" fill="#FFD4A3"/><polygon points="45,21 50,8 37,18" fill="#FFD4A3"/><circle cx="30" cy="33" r="19" fill="#E8521A"/><ellipse cx="30" cy="38" rx="13" ry="10" fill="#FFF5E8"/><ellipse cx="18" cy="36" rx="4" ry="3" fill="#FF8C5A" opacity="0.5"/><ellipse cx="42" cy="36" rx="4" ry="3" fill="#FF8C5A" opacity="0.5"/><ellipse cx="23" cy="30" rx="4" ry="4" fill="white"/><ellipse cx="37" cy="30" rx="4" ry="4" fill="white"/><circle cx="23" cy="31" r="2.5" fill="#1A0A00"/><circle cx="37" cy="31" r="2.5" fill="#1A0A00"/><circle cx="24" cy="30" r="1" fill="white"/><circle cx="38" cy="30" r="1" fill="white"/><ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#1A0A00"/><path d="M27,39 Q30,42 33,39" stroke="#1A0A00" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'panda',name:'แพนด้า',desc:'ขี้เซาแต่ทำได้ทุกท่า',svg:`<svg viewBox="0 0 60 60"><circle cx="14" cy="16" r="8" fill="#333"/><circle cx="46" cy="16" r="8" fill="#333"/><circle cx="30" cy="33" r="19" fill="#F5F5F5"/><ellipse cx="22" cy="29" rx="7" ry="6" fill="#333" transform="rotate(-15,22,29)"/><ellipse cx="38" cy="29" rx="7" ry="6" fill="#333" transform="rotate(15,38,29)"/><circle cx="22" cy="30" r="3.5" fill="white"/><circle cx="38" cy="30" r="3.5" fill="white"/><circle cx="22" cy="31" r="2" fill="#1A0A00"/><circle cx="38" cy="31" r="2" fill="#1A0A00"/><circle cx="23" cy="30" r="0.8" fill="white"/><circle cx="39" cy="30" r="0.8" fill="white"/><ellipse cx="30" cy="37" rx="9" ry="6" fill="#FFD4D4"/><ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#333"/><path d="M27,39.5 Q30,43 33,39.5" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'penguin',name:'เพนกวิน',desc:'เย็นสบายทุกท่า',svg:`<svg viewBox="0 0 60 60"><circle cx="30" cy="28" r="18" fill="#2C3E7A"/><ellipse cx="30" cy="31" rx="11" ry="13" fill="#F5F5F5"/><circle cx="24" cy="26" r="4.5" fill="white"/><circle cx="36" cy="26" r="4.5" fill="white"/><circle cx="24" cy="27" r="2.5" fill="#1A1A2E"/><circle cx="36" cy="27" r="2.5" fill="#1A1A2E"/><circle cx="25" cy="26" r="1" fill="white"/><circle cx="37" cy="26" r="1" fill="white"/><ellipse cx="30" cy="33" rx="3.5" ry="2.5" fill="#FF9500"/><ellipse cx="19" cy="31" rx="4" ry="3" fill="#FF6B8A" opacity="0.5"/><ellipse cx="41" cy="31" rx="4" ry="3" fill="#FF6B8A" opacity="0.5"/></svg>`},
+  {id:'tiger',name:'เสือน้อย',desc:'แข็งแกร่งที่สุด!',svg:`<svg viewBox="0 0 60 60"><polygon points="14,20 9,6 23,16" fill="#E8931A"/><polygon points="46,20 51,6 37,16" fill="#E8931A"/><polygon points="15,19 11,9 22,16" fill="#FFD4A3"/><polygon points="45,19 49,9 38,16" fill="#FFD4A3"/><circle cx="30" cy="33" r="19" fill="#E8931A"/><path d="M18,20 Q22,25 18,30" stroke="#C4640A" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M42,20 Q38,25 42,30" stroke="#C4640A" stroke-width="2.5" fill="none" stroke-linecap="round"/><ellipse cx="30" cy="38" rx="13" ry="9" fill="#FFD4A3"/><circle cx="23" cy="30" r="4" fill="white"/><circle cx="37" cy="30" r="4" fill="white"/><circle cx="23" cy="31" r="2.5" fill="#1A6600"/><circle cx="37" cy="31" r="2.5" fill="#1A6600"/><circle cx="24" cy="30" r="1" fill="white"/><circle cx="38" cy="30" r="1" fill="white"/><ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#CC3366"/><path d="M27,39 Q30,43 33,39" stroke="#CC3366" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'frog',name:'กบเขียว',desc:'กระโดดได้ทุกท่า!',svg:`<svg viewBox="0 0 60 60"><circle cx="18" cy="18" r="9" fill="#4CAF50"/><circle cx="42" cy="18" r="9" fill="#4CAF50"/><circle cx="30" cy="34" r="19" fill="#5DBF61"/><ellipse cx="30" cy="39" rx="13" ry="10" fill="#A5E6A8"/><circle cx="18" cy="18" r="6" fill="white"/><circle cx="42" cy="18" r="6" fill="white"/><circle cx="18" cy="19" r="3.5" fill="#1A4A00"/><circle cx="42" cy="19" r="3.5" fill="#1A4A00"/><circle cx="19" cy="18" r="1.2" fill="white"/><circle cx="43" cy="18" r="1.2" fill="white"/><circle cx="27" cy="32" r="2" fill="#3A9A3E"/><circle cx="33" cy="32" r="2" fill="#3A9A3E"/><path d="M20,39 Q30,47 40,39" stroke="#3A9A3E" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'chick',name:'ลูกไก่',desc:'ตัวเล็กแต่ใจสู้!',svg:`<svg viewBox="0 0 60 60"><circle cx="30" cy="36" r="18" fill="#FFE135"/><circle cx="30" cy="24" r="13" fill="#FFE135"/><ellipse cx="20" cy="26" rx="4" ry="3" fill="#FFB3C6" opacity="0.6"/><ellipse cx="40" cy="26" rx="4" ry="3" fill="#FFB3C6" opacity="0.6"/><circle cx="24" cy="22" r="4" fill="white"/><circle cx="36" cy="22" r="4" fill="white"/><circle cx="24" cy="23" r="2.5" fill="#1A0A00"/><circle cx="36" cy="23" r="2.5" fill="#1A0A00"/><circle cx="25" cy="22" r="1" fill="white"/><circle cx="37" cy="22" r="1" fill="white"/><polygon points="27,28 33,28 30,33" fill="#FF8C00"/><ellipse cx="30" cy="11" rx="3" ry="6" fill="#FFD700"/></svg>`},
+  {id:'koala',name:'โคอาล่า',desc:'ผ่อนคลายทุกท่า',svg:`<svg viewBox="0 0 60 60"><circle cx="12" cy="19" r="11" fill="#A0A8B0"/><circle cx="48" cy="19" r="11" fill="#A0A8B0"/><circle cx="12" cy="19" r="7" fill="#C8D0D8"/><circle cx="48" cy="19" r="7" fill="#C8D0D8"/><circle cx="30" cy="34" r="18" fill="#A0A8B0"/><ellipse cx="30" cy="36" rx="12" ry="9" fill="#C8D0D8"/><circle cx="23" cy="30" r="4" fill="white"/><circle cx="37" cy="30" r="4" fill="white"/><circle cx="23" cy="31" r="2.5" fill="#2D3436"/><circle cx="37" cy="31" r="2.5" fill="#2D3436"/><circle cx="24" cy="30" r="1" fill="white"/><circle cx="38" cy="30" r="1" fill="white"/><ellipse cx="30" cy="36" rx="5" ry="4" fill="#5D6873"/><path d="M26,41 Q30,45 34,41" stroke="#5D6873" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'hamster',name:'แฮมสเตอร์',desc:'วิ่งวงล้อทุกวัน!',svg:`<svg viewBox="0 0 60 60"><circle cx="16" cy="17" r="7" fill="#E8C49A"/><circle cx="44" cy="17" r="7" fill="#E8C49A"/><circle cx="16" cy="17" r="4.5" fill="#FFB3C6"/><circle cx="44" cy="17" r="4.5" fill="#FFB3C6"/><circle cx="30" cy="33" r="19" fill="#E8C49A"/><ellipse cx="13" cy="36" rx="8" ry="6" fill="#FFD4B0"/><ellipse cx="47" cy="36" rx="8" ry="6" fill="#FFD4B0"/><ellipse cx="30" cy="38" rx="10" ry="7" fill="#FFD4B0"/><circle cx="23" cy="29" r="4.5" fill="white"/><circle cx="37" cy="29" r="4.5" fill="white"/><circle cx="23" cy="30" r="3" fill="#1A0A00"/><circle cx="37" cy="30" r="3" fill="#1A0A00"/><circle cx="24" cy="29" r="1.2" fill="white"/><circle cx="38" cy="29" r="1.2" fill="white"/><ellipse cx="30" cy="35.5" rx="2" ry="1.5" fill="#FF8FAB"/><path d="M27,38 Q30,41.5 33,38" stroke="#CC6680" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`},
+  {id:'dino',name:'ไดโนเขียว',desc:'แกร่งที่สุดในยุค!',svg:`<svg viewBox="0 0 60 60"><polygon points="22,8 25,18 19,18" fill="#1E8449"/><polygon points="30,5 33,16 27,16" fill="#1E8449"/><polygon points="38,8 41,18 35,18" fill="#1E8449"/><ellipse cx="30" cy="32" rx="19" ry="17" fill="#2ECC71"/><ellipse cx="30" cy="36" rx="12" ry="9" fill="#82E0AA"/><circle cx="22" cy="27" r="5" fill="white"/><circle cx="38" cy="27" r="5" fill="white"/><circle cx="22" cy="28" r="3" fill="#1A4A00"/><circle cx="38" cy="28" r="3" fill="#1A4A00"/><circle cx="23" cy="27" r="1.2" fill="white"/><circle cx="39" cy="27" r="1.2" fill="white"/><path d="M22,38 Q30,44 38,38" stroke="#1E8449" stroke-width="1.5" fill="none" stroke-linecap="round"/><rect x="26" y="38" width="3" height="3" rx="1" fill="white"/><rect x="31" y="38" width="3" height="3" rx="1" fill="white"/></svg>`}
 ];
 
-// ============================================================
-// FIREBASE CONFIG
-// ============================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyCZ-mHyLPnPhsbpmGEvbpf4u7Kq1lBmJTU",
-  authDomain: "smart-stretch-game.firebaseapp.com",
-  databaseURL: "https://smart-stretch-game-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "smart-stretch-game",
-  storageBucket: "smart-stretch-game.firebasestorage.app",
-  messagingSenderId: "881830815713",
-  appId: "1:881830815713:web:220f50995dcf594a0014a0"
-};
-
-let db = null;
-let firebaseReady = false;
-
-try {
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.database();
-  firebaseReady = true;
-  console.log('✅ Firebase connected');
-} catch (e) {
-  console.warn('⚠️ Firebase not configured');
-}
-
-// ============================================================
-// AVATAR SYSTEM
-// ============================================================
-let selectedAvatarId = cartoonAvatars[0].id;
-
-function getAvatarById(id) {
-  return cartoonAvatars.find(a => a.id === id) || cartoonAvatars[0];
-}
-
-function renderAvatarSVG(id, size = 36) {
-  const av = getAvatarById(id);
-  const div = document.createElement('div');
-  div.innerHTML = av.svg;
-  const svg = div.querySelector('svg');
-  if (svg) {
-    svg.style.width = size + 'px';
-    svg.style.height = size + 'px';
-  }
-  return div.innerHTML;
-}
-
-function initAvatarGrid() {
-  const grid = document.getElementById('avatarGrid');
-  grid.innerHTML = '';
-
-  cartoonAvatars.forEach((av, i) => {
-    const div = document.createElement('div');
-    div.className = 'avatar-option' + (i === 0 ? ' selected' : '');
-    div.title = av.name;
-    div.innerHTML = `
-      <div class="avatar-svg">${av.svg}</div>
-      <div class="avatar-name">${av.name}</div>
-    `;
-    div.onclick = () => {
-      document.querySelectorAll('.avatar-option').forEach(a => a.classList.remove('selected'));
-      div.classList.add('selected');
-      selectedAvatarId = av.id;
-      updateSelectedPreview(av);
-    };
-    grid.appendChild(div);
-  });
-
-  // Init preview
-  updateSelectedPreview(cartoonAvatars[0]);
-}
-
-function updateSelectedPreview(av) {
-  const preview = document.getElementById('selectedAvatarPreview');
-  const nameEl = document.getElementById('selectedAvatarName');
-  const descEl = document.getElementById('selectedAvatarDesc');
-
-  preview.innerHTML = av.svg;
-  const svg = preview.querySelector('svg');
-  if (svg) { svg.style.width = '44px'; svg.style.height = '44px'; }
-  nameEl.textContent = av.name;
-  descEl.textContent = av.desc;
-}
-
-function setHeaderAvatar(avatarId) {
-  const av = getAvatarById(avatarId);
-
-  // Header
-  const wrap = document.getElementById('headerAvatarWrap');
-  if (wrap) {
-    wrap.innerHTML = av.svg;
-    const svg = wrap.querySelector('svg');
-    if (svg) { svg.style.width = '36px'; svg.style.height = '36px'; }
-  }
-
-  // Banner
-  const banner = document.getElementById('bannerAvatarWrap');
-  if (banner) {
-    banner.innerHTML = av.svg;
-    const svg = banner.querySelector('svg');
-    if (svg) { svg.style.width = '36px'; svg.style.height = '36px'; }
-  }
-}
-
-// ============================================================
-// PLAYER STATE
-// ============================================================
-let currentPlayer = null;
-let sessionId = null;
-let currentTab = 'today';
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-}
-
-function handleLogin() {
-  const name = document.getElementById('usernameInput').value.trim();
-  const dept = document.getElementById('departmentInput').value.trim();
-  const av = getAvatarById(selectedAvatarId);
-
-  if (!name) {
-    showToast('⚠️', 'กรุณาใส่ชื่อ', 'โปรดระบุชื่อผู้เล่นก่อนเข้าร่วม');
-    document.getElementById('usernameInput').focus();
-    return;
-  }
-
-  sessionId = generateId();
-
-  currentPlayer = {
-    id: sessionId,
-    name: name,
-    avatarId: selectedAvatarId,
-    avatarName: av.name,
-    department: dept || 'ไม่ระบุ',
-    streak: parseInt(localStorage.getItem('streak') || '0'),
-    totalPoints: parseInt(localStorage.getItem('totalPoints') || '0'),
-    joinedAt: Date.now(),
-    isPlaying: true,
-    currentExercise: 0,
-    lastScore: 0
-  };
-
-  localStorage.setItem('playerName', name);
-  localStorage.setItem('playerAvatarId', selectedAvatarId);
-  localStorage.setItem('playerDept', dept);
-
-  // Update header
-  setHeaderAvatar(selectedAvatarId);
-  document.getElementById('headerUsername').textContent = name;
-  document.getElementById('headerDept').textContent = dept || '—';
-  document.getElementById('streak').textContent = currentPlayer.streak;
-  document.getElementById('totalPoints').textContent = currentPlayer.totalPoints;
-  document.getElementById('bannerPoints').textContent = currentPlayer.totalPoints + ' pts';
-
-  if (firebaseReady) {
-    registerPlayerOnline();
-    loadLeaderboard();
-    listenLivePlayers();
-    listenFeed();
-    listenOnlineCount();
-    addFeedEvent('join', name, av.name, '');
-  }
-
-  document.getElementById('loginScreen').style.display = 'none';
-
-  const tutorialDone = localStorage.getItem('tutorialCompleted');
-  if (!tutorialDone) {
-    buildTutorial();
-    document.getElementById('tutorialModal').style.display = 'flex';
-  }
-
-  buildExerciseList();
-  initState();
-
-  showToast('🎉', `ยินดีต้อนรับ ${name}!`, `ตัวละคร: ${av.name}`);
-}
-
-// ============================================================
+// ═══════════════════════════════════════════════════
 // FIREBASE
-// ============================================================
-function registerPlayerOnline() {
-  if (!firebaseReady || !currentPlayer) return;
-  const ref = db.ref(`live/${sessionId}`);
-  ref.set({
-    id: sessionId,
-    name: currentPlayer.name,
-    avatarId: currentPlayer.avatarId,
-    avatarName: currentPlayer.avatarName,
-    department: currentPlayer.department,
-    isPlaying: true,
-    currentExercise: 0,
-    score: 0,
-    timestamp: Date.now()
+// ═══════════════════════════════════════════════════
+const fbCfg={
+  apiKey:"AIzaSyCZ-mHyLPnPhsbpmGEvbpf4u7Kq1lBmJTU",
+  authDomain:"smart-stretch-game.firebaseapp.com",
+  databaseURL:"https://smart-stretch-game-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"smart-stretch-game",
+  storageBucket:"smart-stretch-game.firebasestorage.app",
+  messagingSenderId:"881830815713",
+  appId:"1:881830815713:web:220f50995dcf594a0014a0"
+};
+let db=null,fbOk=false;
+try{firebase.initializeApp(fbCfg);db=firebase.database();fbOk=true;}catch(e){}
+
+// ═══════════════════════════════════════════════════
+// AVATAR HELPERS
+// ═══════════════════════════════════════════════════
+let selAvId='cat';
+const getAv=id=>AVS.find(a=>a.id===id)||AVS[0];
+const svgR=(s,w,h)=>s.replace('<svg ','`<svg width="${w}" height="${h}" `').replace('`<svg width="${w}" height="${h}" `',`<svg width="${w}" height="${h}" `);
+
+// Simpler approach
+function setSvg(el,avId,sz){if(typeof el==='string')el=document.getElementById(el);if(!el)return;const av=getAv(avId);el.innerHTML=av.svg.replace('<svg ','<svg width="'+sz+'" height="'+sz+'" ');}
+
+function initAvGrid(){
+  const g=document.getElementById('avGrid');g.innerHTML='';
+  AVS.forEach((av,i)=>{
+    const d=document.createElement('div');
+    d.className='avatar-option'+(i===0?' selected':'');
+    d.innerHTML=`<div style="width:100%;height:100%">${av.svg}</div><div class="avatar-name">${av.name}</div>`;
+    d.onclick=()=>{document.querySelectorAll('.avatar-option').forEach(a=>a.classList.remove('selected'));d.classList.add('selected');selAvId=av.id;updateSelPrev(av);};
+    g.appendChild(d);
   });
-  ref.onDisconnect().remove();
+  updateSelPrev(AVS[0]);
+}
+function updateSelPrev(av){
+  const p=document.getElementById('selAvPrev');
+  p.innerHTML=av.svg.replace('<svg ','<svg width="44" height="44" ');
+  document.getElementById('selAvName').textContent=av.name;
+  document.getElementById('selAvDesc').textContent=av.desc;
 }
 
-function updateLiveStatus(exerciseIndex, score) {
-  if (!firebaseReady || !sessionId) return;
-  db.ref(`live/${sessionId}`).update({ currentExercise: exerciseIndex, score: score, timestamp: Date.now() });
+// ═══════════════════════════════════════════════════
+// PLAYER + STATE
+// ═══════════════════════════════════════════════════
+let player=null,sid=null,curTab='today';
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).substr(2,9);
+
+function handleLogin(){
+  const name=document.getElementById('nameIn').value.trim();
+  const dept=document.getElementById('deptIn').value.trim();
+  const av=getAv(selAvId);
+  if(!name){toast('⚠️','กรุณาใส่ชื่อ','โปรดระบุชื่อก่อน');document.getElementById('nameIn').focus();return;}
+  sid=genId();
+  player={id:sid,name,avId:selAvId,avName:av.name,dept:dept||'ไม่ระบุ',streak:+localStorage.getItem('streak')||0,pts:+localStorage.getItem('pts')||0,joinedAt:Date.now()};
+  localStorage.setItem('pName',name);localStorage.setItem('pAv',selAvId);localStorage.setItem('pDept',dept);
+  // Update header
+  setSvg('hAvWrap',selAvId,36);setSvg('rbAv',selAvId,36);
+  document.getElementById('hName').textContent=name;
+  document.getElementById('hDept').textContent=dept||'—';
+  document.getElementById('streak').textContent=player.streak;
+  document.getElementById('pts').textContent=player.pts;
+  document.getElementById('rbPts').textContent=player.pts+' pts';
+  document.getElementById('myVidName').textContent=name;
+  if(fbOk){fbRegister();loadLB();fbListenLive();fbListenFeed();fbListenOnline();fbAddFeed('join',name,av.name,'');}
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('gFloat').style.display='flex';
+  if(!localStorage.getItem('tutDone')){buildTut();document.getElementById('tutModal').style.display='flex';}
+  buildExList();initGS();
+  toast('🎉',`ยินดีต้อนรับ ${name}!`,`${av.name} · WebRTC P2P Ready`);
 }
 
-function saveScore(avgScore, exercisesCount) {
-  if (!firebaseReady || !currentPlayer) return;
-  const today = new Date().toISOString().split('T')[0];
-  const week = getWeekKey();
-  const entry = {
-    id: sessionId,
-    name: currentPlayer.name,
-    avatarId: currentPlayer.avatarId,
-    avatarName: currentPlayer.avatarName,
-    department: currentPlayer.department,
-    score: avgScore,
-    exercises: exercisesCount,
-    points: currentPlayer.totalPoints,
-    streak: currentPlayer.streak,
-    timestamp: Date.now()
-  };
-  db.ref(`leaderboard/today/${today}/${sessionId}`).set(entry);
-  db.ref(`leaderboard/week/${week}/${sessionId}`).set(entry);
-  db.ref(`leaderboard/all/${sessionId}`).set(entry);
+// ═══════════════════════════════════════════════════
+// FIREBASE OPS
+// ═══════════════════════════════════════════════════
+function fbRegister(){
+  if(!fbOk||!player)return;
+  const r=db.ref(`live/${sid}`);
+  r.set({id:sid,name:player.name,avId:player.avId,avName:player.avName,dept:player.dept,isPlaying:true,currentExercise:0,score:0,joinedAt:player.joinedAt,hasVideo:false,ts:Date.now()});
+  r.onDisconnect().remove();
+  db.ref(`sig/${sid}`).onDisconnect().remove();
+}
+function fbUpdateLive(ei,sc){if(!fbOk||!sid)return;db.ref(`live/${sid}`).update({currentExercise:ei,score:sc,ts:Date.now()});}
+function fbSaveScore(avg,cnt){
+  if(!fbOk||!player)return;
+  const td=new Date().toISOString().split('T')[0],wk=getWk();
+  const e={id:sid,name:player.name,avId:player.avId,avName:player.avName,dept:player.dept,score:avg,exercises:cnt,points:player.pts,streak:player.streak,ts:Date.now()};
+  db.ref(`lb/today/${td}/${sid}`).set(e);db.ref(`lb/week/${wk}/${sid}`).set(e);db.ref(`lb/all/${sid}`).set(e);
+}
+function getWk(){const d=new Date(),dy=d.getDay(),df=d.getDate()-dy+(dy===0?-6:1);return new Date(d.setDate(df)).toISOString().split('T')[0];}
+function fbAddFeed(type,name,avName,extra){
+  if(!fbOk)return;
+  const msgs={join:`${avName} ${name} เข้าร่วม!`,complete:`${avName} ${name} ทำครบ 8 ท่า ได้ ${extra}%!`,exercise:`${avName} ${name} เริ่มท่า ${extra}`};
+  db.ref('feed').push({type,text:msgs[type]||`${name} ${extra}`,ts:Date.now()});
 }
 
-function getWeekKey() {
-  const d = new Date();
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const mon = new Date(d.setDate(diff));
-  return mon.toISOString().split('T')[0];
-}
+// ═══════════════════════════════════════════════════
+// WEBRTC STREAMING ENGINE
+// ═══════════════════════════════════════════════════
+const ICE=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:stun2.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
+];
 
-function addFeedEvent(type, name, avatarName, extra) {
-  if (!firebaseReady) return;
-  const messages = {
-    join: `${avatarName} ${name} เข้าร่วมการแข่งขัน!`,
-    complete: `${avatarName} ${name} ทำครบ 8 ท่า ได้ ${extra}%!`,
-    milestone: `${avatarName} ${name} ทำสถิติใหม่! ${extra} pts`,
-    exercise: `${avatarName} ${name} เริ่มท่า ${extra}`
-  };
-  db.ref('feed').push({ type, text: messages[type] || `${name} ${extra}`, timestamp: Date.now() });
-}
+const peers={};       // peerId -> {pc,role,remoteStream,status}
+const liveData={};    // peerId -> firebase live data
+let localStream=null;
+let gOpen=false,gCols=3;
 
-// ============================================================
-// REALTIME LISTENERS
-// ============================================================
-function listenLivePlayers() {
-  if (!firebaseReady) return;
-  db.ref('live').on('value', snap => {
-    const players = [];
-    snap.forEach(c => players.push(c.val()));
-    players.sort((a, b) => (b.score || 0) - (a.score || 0));
-    document.getElementById('liveCount').textContent = players.length;
-
-    const list = document.getElementById('liveList');
-    if (players.length === 0) {
-      list.innerHTML = '<div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">ยังไม่มีผู้เล่น</div>';
-      return;
+// Set local webcam stream → share to all peers
+function setLocalStream(stream){
+  localStream=stream;
+  const v=document.getElementById('myStripVid');
+  if(v)v.srcObject=stream;
+  if(fbOk&&sid)db.ref(`live/${sid}`).update({hasVideo:true});
+  // Add tracks to existing peer connections
+  Object.keys(peers).forEach(pid=>{
+    const info=peers[pid];
+    if(info&&info.role==='caller'){
+      stream.getTracks().forEach(t=>{
+        try{info.pc.addTrack(t,stream);}catch(e){}
+      });
+      reOffer(pid);
     }
-
-    list.innerHTML = '';
-    players.slice(0, 10).forEach(p => {
-      const isMe = p.id === sessionId;
-      const av = getAvatarById(p.avatarId || 'cat');
-      const exerciseName = exercises[p.currentExercise] ? exercises[p.currentExercise].nameTH : 'เสร็จแล้ว';
-
-      const div = document.createElement('div');
-      div.className = 'live-player';
-      div.style.background = isMe ? '#E8EEFF' : '#F8FAFC';
-      if (isMe) div.style.border = '2px solid #667eea';
-
-      div.innerHTML = `
-        <div class="live-avatar-wrap">${av.svg.replace('viewBox="0 0 60 60"', 'viewBox="0 0 60 60" width="26" height="26"')}</div>
-        <div class="live-player-info">
-          <div class="live-player-name">${p.name || ''}${isMe ? ' <span style="font-size:0.65rem;background:#667eea;color:white;padding:0.1rem 0.35rem;border-radius:2rem;">คุณ</span>' : ''}</div>
-          <div class="live-player-status">ท่า: ${exerciseName}</div>
-        </div>
-        <div class="live-player-score">${Math.round(p.score || 0)}%</div>
-        <div class="live-pulse"></div>
-      `;
-      list.appendChild(div);
-    });
   });
 }
 
-function listenFeed() {
-  if (!firebaseReady) return;
-  db.ref('feed').orderByChild('timestamp').limitToLast(20).on('value', snap => {
-    const items = [];
-    snap.forEach(c => items.push(c.val()));
-    items.reverse();
+// Create new WebRTC connection to peer
+async function createPC(peerId,role){
+  if(peers[peerId])return;
+  const remoteStream=new MediaStream();
+  const pc=new RTCPeerConnection({iceServers:ICE});
+  peers[peerId]={pc,role,remoteStream,status:'connecting'};
+  updateWRTCStatus();
 
-    const icons = { join: '👋', complete: '🎉', milestone: '🌟', exercise: '💪' };
-    const list = document.getElementById('feedList');
-    list.innerHTML = '';
+  // Add our local tracks
+  if(localStream)localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
 
-    if (items.length === 0) {
-      list.innerHTML = '<div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">รอกิจกรรม...</div>';
-      return;
-    }
+  // Receive remote tracks
+  pc.ontrack=e=>{
+    e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t));
+    peers[peerId].remoteStream=e.streams[0]||remoteStream;
+    peers[peerId].status='connected';
+    updateWRTCStatus();
+    if(gOpen)renderGrid();
+  };
 
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'feed-item';
-      div.innerHTML = `
-        <div class="feed-icon">${icons[item.type] || '📣'}</div>
-        <div>
-          <div class="feed-text">${item.text}</div>
-          <div class="feed-time">${getTimeAgo(item.timestamp)}</div>
-        </div>
-      `;
-      list.appendChild(div);
-    });
+  // ICE
+  pc.onicecandidate=e=>{
+    if(e.candidate)sendSig(peerId,{type:'ice',candidate:e.candidate.toJSON(),from:sid});
+  };
+
+  pc.onconnectionstatechange=()=>{
+    const st=pc.connectionState;
+    peers[peerId].status=st==='connected'?'connected':st==='failed'||st==='closed'||st==='disconnected'?st:'connecting';
+    updateWRTCStatus();
+    if(gOpen)renderGrid();
+  };
+
+  if(role==='caller'){
+    const offer=await pc.createOffer({offerToReceiveVideo:true,offerToReceiveAudio:false});
+    await pc.setLocalDescription(offer);
+    sendSig(peerId,{type:'offer',sdp:pc.localDescription.toJSON(),from:sid});
+  }
+}
+
+async function handleSig(msg){
+  const pid=msg.from;
+  if(!pid||pid===sid)return;
+
+  if(msg.type==='offer'){
+    if(!peers[pid])await createPC(pid,'callee');
+    const pc=peers[pid]?.pc;if(!pc)return;
+    await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+    const ans=await pc.createAnswer();
+    await pc.setLocalDescription(ans);
+    sendSig(pid,{type:'answer',sdp:pc.localDescription.toJSON(),from:sid});
+  }else if(msg.type==='answer'){
+    const pc=peers[pid]?.pc;
+    if(pc&&pc.signalingState!=='stable')await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+  }else if(msg.type==='ice'){
+    const pc=peers[pid]?.pc;
+    if(pc&&msg.candidate){try{await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));}catch(e){}}
+  }
+}
+
+async function reOffer(pid){
+  const info=peers[pid];if(!info||info.role!=='caller')return;
+  try{
+    const offer=await info.pc.createOffer();
+    await info.pc.setLocalDescription(offer);
+    sendSig(pid,{type:'offer',sdp:info.pc.localDescription.toJSON(),from:sid});
+  }catch(e){}
+}
+
+function sendSig(toPid,msg){if(fbOk)db.ref(`sig/${toPid}`).push(msg);}
+
+function closePeer(pid){
+  const info=peers[pid];
+  if(info){try{info.pc.close();}catch(e){};delete peers[pid];}
+  delete liveData[pid];
+  updateWRTCStatus();
+  if(gOpen)renderGrid();
+}
+
+function updateWRTCStatus(){
+  const vals=Object.values(peers);
+  const conn=vals.filter(p=>p.status==='connected').length;
+  const connting=vals.filter(p=>p.status==='connecting').length;
+  const fail=vals.filter(p=>p.status==='failed'||p.status==='disconnected').length;
+  document.getElementById('wConnected').textContent=`เชื่อมต่อ: ${conn}`;
+  document.getElementById('wConnecting').textContent=`กำลังเชื่อม: ${connting}`;
+  document.getElementById('wFailed').textContent=`ล้มเหลว: ${fail}`;
+  document.getElementById('peerCountTxt').textContent=`🔗 เชื่อมต่อแล้ว ${conn} คน`;
+}
+
+// Listen Firebase for peers + signaling
+function startWebRTC(){
+  if(!fbOk||!sid)return;
+
+  db.ref('live').on('child_added',async snap=>{
+    const p=snap.val();
+    if(!p||p.id===sid)return;
+    liveData[p.id]=p;
+    // Caller = smaller ID initiates
+    if(sid<p.id)await createPC(p.id,'caller');
+    if(gOpen)renderGrid();
+  });
+
+  db.ref('live').on('child_changed',snap=>{
+    const p=snap.val();
+    if(!p||p.id===sid)return;
+    liveData[p.id]=p;
+    if(gOpen)renderGrid();
+  });
+
+  db.ref('live').on('child_removed',snap=>{
+    const p=snap.val();if(!p)return;
+    closePeer(p.id);
+  });
+
+  db.ref(`sig/${sid}`).on('child_added',async snap=>{
+    const msg=snap.val();
+    snap.ref.remove();
+    if(msg)await handleSig(msg);
   });
 }
 
-function listenOnlineCount() {
-  if (!firebaseReady) return;
-  db.ref('live').on('value', snap => {
-    document.getElementById('onlineCountBadge').textContent = `${snap.numChildren()} คนออนไลน์อยู่ตอนนี้`;
-  });
+// ═══════════════════════════════════════════════════
+// GALLERY UI
+// ═══════════════════════════════════════════════════
+function openGallery(){
+  gOpen=true;
+  document.getElementById('gModal').classList.add('open');
+  document.body.style.overflow='hidden';
+  // Show my cam strip
+  const mv=document.getElementById('webcam');
+  if(mv&&mv.srcObject){
+    document.getElementById('myStripVid').srcObject=mv.srcObject;
+    document.getElementById('myStrip').style.display='flex';
+  }else{
+    document.getElementById('myStrip').style.display='flex';
+  }
+  renderGrid();
 }
 
-function loadLeaderboard() {
-  if (!firebaseReady) return;
-  switchTab(currentTab);
+function closeGallery(){
+  gOpen=false;
+  document.getElementById('gModal').classList.remove('open');
+  document.body.style.overflow='';
 }
 
-function switchTab(tab) {
-  currentTab = tab;
-  ['Today', 'Week', 'All'].forEach(t => document.getElementById('tab' + t).classList.remove('active'));
-  document.getElementById('tab' + (tab.charAt(0).toUpperCase() + tab.slice(1))).classList.add('active');
-
-  let path;
-  if (tab === 'today') path = `leaderboard/today/${new Date().toISOString().split('T')[0]}`;
-  else if (tab === 'week') path = `leaderboard/week/${getWeekKey()}`;
-  else path = `leaderboard/all`;
-
-  if (!firebaseReady) { renderLocalLeaderboard(); return; }
-
-  db.ref(path).orderByChild('score').limitToLast(50).once('value', snap => {
-    const entries = [];
-    snap.forEach(c => entries.push(c.val()));
-    entries.sort((a, b) => b.score - a.score);
-    renderLeaderboard(entries);
-  });
+function setGCols(n){
+  gCols=n;
+  document.getElementById('sGrid').className=`s-grid c${n}`;
+  [1,2,3,4,6].forEach(c=>document.getElementById(`gb${c}`).classList.toggle('active',c===n));
 }
 
-function renderLeaderboard(entries) {
-  const list = document.getElementById('lbList');
-  list.innerHTML = '';
+function updGCount(n){
+  [document.getElementById('gFloatCnt'),document.getElementById('gLiveCnt'),document.getElementById('hGCnt')].forEach(el=>{if(el)el.textContent=n;});
+}
 
-  if (entries.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:2rem;font-size:0.875rem;">ยังไม่มีข้อมูล<br>เป็นคนแรกที่เล่น!</div>';
+function renderGrid(){
+  const grid=document.getElementById('sGrid');
+  const sort=document.getElementById('gSort').value;
+
+  // Self entry
+  const self={id:sid,isSelf:true,name:player?.name||'คุณ',avId:player?.avId||'cat',avName:player?.avName||'',dept:player?.dept||'',score:gs.acc,exercise:gs.exIdx,joinedAt:player?.joinedAt||0};
+
+  const others=Object.values(liveData).filter(p=>p.id!==sid);
+  if(sort==='score')others.sort((a,b)=>(b.score||0)-(a.score||0));
+  else if(sort==='name')others.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  else others.sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0));
+
+  const all=[self,...others];
+  updGCount(all.length);
+
+  if(all.length===0){
+    grid.innerHTML=`<div class="g-empty"><div class="g-empty-icon">🎥</div><div style="font-weight:700">รอผู้เล่น Live เข้าร่วม...</div><div style="font-size:.875rem;opacity:.55">แชร์ลิงก์ให้เพื่อนมาเล่นด้วยกัน!</div></div>`;
     return;
   }
 
-  let myRank = null;
-  const rankIcons = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  grid.innerHTML='';
+  const ri={0:'🥇',1:'🥈',2:'🥉'};
 
-  entries.forEach((entry, index) => {
-    const rank = index + 1;
-    const isMe = entry.id === sessionId;
-    if (isMe) {
-      myRank = rank;
-      document.getElementById('bannerRank').textContent = rank;
-      document.getElementById('myRankPill').textContent = '#' + rank;
+  all.forEach((p,idx)=>{
+    const isMe=p.isSelf||p.id===sid;
+    const av=getAv(p.avId||'cat');
+    const exIdx=p.exercise??p.currentExercise??0;
+    const exName=EXERCISES[exIdx]?EXERCISES[exIdx].nameTH:'เสร็จแล้ว';
+    const score=Math.round(p.score||0);
+    const spClass=score>=90?'sp-ex':score>=80?'sp-good':score>=50?'sp-warn':'sp-def';
+    const pInfo=peers[p.id];
+    const pStatus=isMe?'self':pInfo?.status||'waiting';
+
+    const card=document.createElement('div');
+    let cc='s-card';
+    if(isMe)cc+=' me';
+    else if(sort==='score'){if(idx===1)cc+=' g1';else if(idx===2)cc+=' g2';else if(idx===3)cc+=' g3';}
+    card.className=cc;
+
+    // Rank
+    let rank='';
+    if(isMe)rank=`<div class="s-me-tag">⭐ คุณ</div>`;
+    else if(sort==='score'&&idx>0&&idx<=3)rank=`<div class="s-rank r${idx}">${ri[idx-1]}</div>`;
+    else rank=`<div class="s-rank rn">#${idx+1}</div>`;
+
+    // Video content
+    let vidHTML='';
+    const vId=`sv_${p.id||'me'}`;
+
+    if(isMe){
+      vidHTML=`
+        <div class="s-live-tag"><div class="s-live-d"></div>LIVE</div>
+        <div class="s-ex-tag">ท่า: ${exName}</div>
+        <video id="${vId}" autoplay playsinline muted class="sv mir"></video>`;
+    }else if(pStatus==='connected'&&pInfo?.remoteStream){
+      vidHTML=`
+        <div class="s-live-tag"><div class="s-live-d"></div>LIVE</div>
+        <div class="s-ex-tag">ท่า: ${exName}</div>
+        <video id="${vId}" autoplay playsinline class="sv"></video>`;
+    }else if(pStatus==='connecting'){
+      vidHTML=`
+        <div class="s-ex-tag">ท่า: ${exName}</div>
+        <div class="sv-ph">
+          <div class="sv-av">${av.svg.replace('<svg ','<svg width="70" height="70" ')}</div>
+          <div class="sv-ph-name">${p.name}</div>
+          <div class="sv-ph-status">กำลังเชื่อมต่อ...</div>
+        </div>
+        <div class="s-conn"><div class="s-conn-spin"></div><div class="s-conn-txt">กำลังเชื่อม WebRTC...</div></div>`;
+    }else{
+      vidHTML=`
+        <div class="s-ex-tag">ท่า: ${exName}</div>
+        <div class="sv-ph">
+          <div class="sv-av">${av.svg.replace('<svg ','<svg width="70" height="70" ')}</div>
+          <div class="sv-ph-name">${p.name}</div>
+          <div class="sv-ph-status">${p.hasVideo?'รอเชื่อมต่อ...':'ไม่มีกล้อง'}</div>
+        </div>`;
     }
 
-    const av = getAvatarById(entry.avatarId || 'cat');
-    const div = document.createElement('div');
-    div.className = 'lb-item' + (isMe ? ' is-me' : '');
-    const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-other';
+    card.innerHTML=`
+      ${rank}
+      <div class="sv-wrap">${vidHTML}</div>
+      <div class="s-info">
+        <div class="s-info-l">
+          <div class="s-av-sm">${av.svg.replace('<svg ','<svg width="18" height="18" ')}</div>
+          <div><div class="s-name">${p.name}</div><div class="s-dept">${p.dept||p.department||''}</div></div>
+        </div>
+        <div class="s-pill ${spClass}">${score>0?score+'%':'—'}</div>
+      </div>`;
 
-    div.innerHTML = `
-      <div class="lb-rank ${rankClass}">${rankIcons[rank] || rank}</div>
-      <div class="lb-avatar-wrap">${av.svg.replace('viewBox="0 0 60 60"', 'viewBox="0 0 60 60" width="28" height="28"')}</div>
-      <div class="lb-info">
-        <div class="lb-name">${entry.name}${isMe ? ' <span class="you-badge">คุณ</span>' : ''}</div>
-        <div class="lb-meta">${av.name} · ${entry.department || ''}</div>
-      </div>
-      <div class="lb-score-col">
-        <div class="lb-score">${entry.points || 0} pts</div>
-        <div class="lb-accuracy">${entry.score || 0}%</div>
-      </div>
-    `;
-    list.appendChild(div);
+    card.onclick=()=>spotlightP(p,isMe,pInfo);
+    grid.appendChild(card);
+
+    // Attach video streams
+    if(isMe){
+      requestAnimationFrame(()=>{
+        const v=document.getElementById(vId);
+        const mv=document.getElementById('webcam');
+        if(v&&mv&&mv.srcObject)v.srcObject=mv.srcObject;
+      });
+    }else if(pStatus==='connected'&&pInfo?.remoteStream){
+      requestAnimationFrame(()=>{
+        const v=document.getElementById(vId);
+        if(v&&pInfo.remoteStream)v.srcObject=pInfo.remoteStream;
+      });
+    }
   });
+}
 
-  if (myRank === null) {
-    document.getElementById('bannerRank').textContent = entries.length + '+';
-    document.getElementById('myRankPill').textContent = '#—';
+// Spotlight modal
+function spotlightP(p,isMe,pInfo){
+  const av=getAv(p.avId||'cat');
+  const exIdx=p.exercise??p.currentExercise??0;
+  const exName=EXERCISES[exIdx]?EXERCISES[exIdx].nameTH:'เสร็จแล้ว';
+  const score=Math.round(p.score||0);
+  const pSt=isMe?'live':pInfo?.status||'—';
+
+  const bg=document.createElement('div');
+  bg.className='spot-bg';
+
+  let mainVid='';
+  const svId=`spot_${p.id||'me'}`;
+  if(isMe){
+    mainVid=`<video id="${svId}" autoplay playsinline muted class="spot-vid mir"></video>`;
+  }else if(pInfo?.remoteStream&&pInfo?.status==='connected'){
+    mainVid=`<video id="${svId}" autoplay playsinline class="spot-vid"></video>`;
+  }else{
+    mainVid=`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;background:#070714"><div style="width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center">${av.svg.replace('<svg ','<svg width="100" height="100" ')}</div><div style="color:rgba(255,255,255,.4);font-size:.875rem">${pSt==='connecting'?'กำลังเชื่อมต่อ...':'ไม่มีภาพ'}</div></div>`;
   }
-}
 
-function renderLocalLeaderboard() {
-  if (!currentPlayer) return;
-  renderLeaderboard([{
-    id: sessionId, name: currentPlayer.name,
-    avatarId: currentPlayer.avatarId, avatarName: currentPlayer.avatarName,
-    department: currentPlayer.department, score: currentPlayer.lastScore || 0,
-    points: currentPlayer.totalPoints, exercises: 8
-  }]);
-}
-
-// ============================================================
-// TUTORIAL
-// ============================================================
-let currentSlide = 0;
-
-function buildTutorial() {
-  const carousel = document.getElementById('exerciseCarousel');
-  const indicators = document.getElementById('indicators');
-  carousel.innerHTML = '';
-  indicators.innerHTML = '';
-
-  exercises.forEach((ex, i) => {
-    const item = document.createElement('div');
-    item.className = 'carousel-item' + (i === 0 ? ' active' : '');
-    item.innerHTML = `
-      <div class="exercise-card">
-        <div class="exercise-image">
-          <div class="exercise-emoji">${['🧘','💪','🙆','🤸','🦸','🦵','🏃','🚶'][i]}</div>
+  bg.innerHTML=`
+    <div class="spot-card" onclick="event.stopPropagation()">
+      <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:.875rem">
+          <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid rgba(255,255,255,.4)">${av.svg.replace('<svg ','<svg width="44" height="44" ')}</div>
+          <div><div style="color:white;font-weight:700;font-size:1.125rem">${p.name}${isMe?' (คุณ)':''}</div><div style="color:rgba(255,255,255,.8);font-size:.8rem">${av.name} · ${p.dept||p.department||''}</div></div>
         </div>
-        <div class="exercise-details">
-          <span class="exercise-number">ท่าที่ ${i+1}/8</span>
-          <h3 class="exercise-card-title">${ex.name}</h3>
-          <p class="exercise-card-subtitle">${ex.nameTH}</p>
-          <p class="exercise-card-description">${ex.description}</p>
-          <div class="exercise-benefits">
-            <div class="benefits-title">💡 ประโยชน์</div>
-            <ul class="benefits-list">${ex.tips.map(t => `<li>${t}</li>`).join('')}</ul>
-          </div>
+        <button onclick="this.closest('.spot-bg').remove()" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:.5rem;padding:.4rem .875rem;cursor:pointer;font-family:'Prompt',sans-serif">✕ ปิด</button>
+      </div>
+      <div style="padding:1.5rem">
+        <div class="spot-vid-wrap">${mainVid}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.875rem;margin-top:1.25rem">
+          <div style="background:rgba(255,255,255,.05);border-radius:.875rem;padding:1rem;text-align:center;border:1px solid rgba(255,255,255,.08)"><div style="font-size:1.75rem;font-weight:700;color:#667eea">${score}%</div><div style="color:rgba(255,255,255,.35);font-size:.75rem;margin-top:.25rem">ความแม่นยำ</div></div>
+          <div style="background:rgba(255,255,255,.05);border-radius:.875rem;padding:1rem;text-align:center;border:1px solid rgba(255,255,255,.08)"><div style="font-size:1.75rem;font-weight:700;color:#F59E0B">${exIdx+1}/8</div><div style="color:rgba(255,255,255,.35);font-size:.75rem;margin-top:.25rem">ท่าปัจจุบัน</div></div>
+          <div style="background:rgba(255,255,255,.05);border-radius:.875rem;padding:1rem;text-align:center;border:1px solid rgba(255,255,255,.08)"><div style="font-size:1rem;font-weight:700;color:#22C55E">${exName}</div><div style="color:rgba(255,255,255,.35);font-size:.75rem;margin-top:.25rem">ท่าออกกำลัง</div></div>
         </div>
       </div>
-    `;
-    carousel.appendChild(item);
+    </div>`;
+  bg.onclick=()=>bg.remove();
+  document.body.appendChild(bg);
 
-    const dot = document.createElement('div');
-    dot.className = 'indicator-dot' + (i === 0 ? ' active' : '');
-    dot.onclick = () => goToSlide(i);
-    indicators.appendChild(dot);
+  requestAnimationFrame(()=>{
+    const el=document.getElementById(svId);
+    if(!el)return;
+    if(isMe){const mv=document.getElementById('webcam');if(mv&&mv.srcObject)el.srcObject=mv.srcObject;}
+    else if(pInfo?.remoteStream)el.srcObject=pInfo.remoteStream;
   });
-
-  document.getElementById('prevBtn').disabled = true;
 }
 
-function showSlide(n) {
-  const items = document.querySelectorAll('.carousel-item');
-  const dots = document.querySelectorAll('.indicator-dot');
-  if (n >= exercises.length) currentSlide = exercises.length - 1;
-  else if (n < 0) currentSlide = 0;
-  else currentSlide = n;
-  items.forEach((item, i) => item.classList.toggle('active', i === currentSlide));
-  dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
-  document.getElementById('prevBtn').disabled = currentSlide === 0;
-  document.getElementById('nextBtn').disabled = currentSlide === exercises.length - 1;
+// ═══════════════════════════════════════════════════
+// FIREBASE LISTENERS
+// ═══════════════════════════════════════════════════
+function fbListenLive(){
+  if(!fbOk)return;
+  db.ref('live').on('value',snap=>{
+    const all={};snap.forEach(c=>{const v=c.val();if(v&&v.id!==sid)all[v.id]=v;});
+    Object.keys(liveData).forEach(k=>{if(!all[k])delete liveData[k];});
+    Object.assign(liveData,all);
+    updGCount(Object.keys(liveData).length+1);
+    renderLiveList();
+    if(gOpen)renderGrid();
+  });
+  startWebRTC();
 }
 
-function changeSlide(d) { showSlide(currentSlide + d); }
-function goToSlide(i) { showSlide(i); }
-function skipTutorial() { document.getElementById('tutorialModal').style.display = 'none'; }
-function completeTutorial() {
-  document.getElementById('tutorialModal').style.display = 'none';
-  localStorage.setItem('tutorialCompleted', 'true');
+function renderLiveList(){
+  const all=Object.values(liveData).sort((a,b)=>(b.score||0)-(a.score||0));
+  document.getElementById('liveCnt').textContent=all.length+1;
+  const list=document.getElementById('liveList');
+  const selfEntry={id:sid,name:player?.name||'คุณ',avId:player?.avId||'cat',score:gs.acc,currentExercise:gs.exIdx};
+  const show=[selfEntry,...all].slice(0,10);
+  if(all.length===0&&show.length<=1){list.innerHTML='<div style="text-align:center;color:#94A3B8;font-size:.875rem;padding:1rem">ยังไม่มีผู้เล่นอื่น</div>';
+    // Still show self
+  }
+  list.innerHTML='';
+  show.forEach(p=>{
+    const isMe=p.id===sid;
+    const av=getAv(p.avId||'cat');
+    const exName=EXERCISES[p.currentExercise]?EXERCISES[p.currentExercise].nameTH:'—';
+    const d=document.createElement('div');
+    d.className='live-player';d.style.background=isMe?'#E8EEFF':'#F8FAFC';
+    if(isMe)d.style.border='2px solid #667eea';
+    d.innerHTML=`<div class="lp-av">${av.svg.replace('<svg ','<svg width="26" height="26" ')}</div><div class="lp-info"><div class="lp-name">${p.name||''}${isMe?' <span style="font-size:.65rem;background:#667eea;color:white;padding:.1rem .35rem;border-radius:2rem">คุณ</span>':''}</div><div class="lp-status">ท่า: ${exName}</div></div><div class="lp-score">${Math.round(p.score||0)}%</div><div class="lp-pulse"></div>`;
+    list.appendChild(d);
+  });
 }
 
-// ============================================================
-// GAME STATE & EXERCISES
-// ============================================================
-const gameState = {
-  currentExerciseIndex: 0, exerciseScores: [],
-  isPaused: false, isGameActive: false,
-  timeRemaining: 20, currentAccuracy: 0,
-  streak: 0, totalPoints: 0
-};
+function fbListenFeed(){
+  if(!fbOk)return;
+  db.ref('feed').orderByChild('ts').limitToLast(20).on('value',snap=>{
+    const items=[];snap.forEach(c=>items.push(c.val()));items.reverse();
+    const icons={join:'👋',complete:'🎉',exercise:'💪'};
+    const list=document.getElementById('feedList');list.innerHTML='';
+    if(!items.length){list.innerHTML='<div style="text-align:center;color:#94A3B8;font-size:.875rem;padding:1rem">รอกิจกรรม...</div>';return;}
+    items.forEach(it=>{const d=document.createElement('div');d.className='feed-item';d.innerHTML=`<div class="fi-icon">${icons[it.type]||'📣'}</div><div><div class="fi-text">${it.text}</div><div class="fi-time">${ago(it.ts)}</div></div>`;list.appendChild(d);});
+  });
+}
+function fbListenOnline(){if(!fbOk)return;db.ref('live').on('value',snap=>document.getElementById('onlineBadge').textContent=`${snap.numChildren()} คนออนไลน์อยู่ตอนนี้`);}
+function loadLB(){if(fbOk)switchTab(curTab);}
+function switchTab(tab){
+  curTab=tab;
+  ['Today','Week','All'].forEach(t=>document.getElementById('tab'+t).classList.remove('active'));
+  document.getElementById('tab'+(tab[0].toUpperCase()+tab.slice(1))).classList.add('active');
+  let path;
+  if(tab==='today')path=`lb/today/${new Date().toISOString().split('T')[0]}`;
+  else if(tab==='week')path=`lb/week/${getWk()}`;
+  else path='lb/all';
+  if(!fbOk){renderLB([]);return;}
+  db.ref(path).orderByChild('score').limitToLast(50).once('value',snap=>{
+    const e=[];snap.forEach(c=>e.push(c.val()));e.sort((a,b)=>b.score-a.score);renderLB(e);
+  });
+}
+function renderLB(entries){
+  const list=document.getElementById('lbList');list.innerHTML='';
+  if(!entries.length){list.innerHTML='<div style="text-align:center;color:#94A3B8;padding:2rem;font-size:.875rem">ยังไม่มีข้อมูล<br>เป็นคนแรกที่เล่น!</div>';return;}
+  const ri={1:'🥇',2:'🥈',3:'🥉'};let myRank=null;
+  entries.forEach((e,i)=>{
+    const rank=i+1,isMe=e.id===sid;
+    if(isMe){myRank=rank;document.getElementById('rbRank').textContent=rank;document.getElementById('rankPill').textContent='#'+rank;}
+    const av=getAv(e.avId||'cat');
+    const d=document.createElement('div');d.className='lb-item'+(isMe?' is-me':'');
+    d.innerHTML=`<div class="lb-rank ${rank<=3?'r'+rank:'rn'}">${ri[rank]||rank}</div><div class="lb-av">${av.svg.replace('<svg ','<svg width="28" height="28" ')}</div><div class="lb-info"><div class="lb-name">${e.name}${isMe?' <span class="you-badge">คุณ</span>':''}</div><div class="lb-meta">${av.name} · ${e.dept||e.department||''}</div></div><div class="lb-sc-col"><div class="lb-sc">${e.points||0} pts</div><div class="lb-acc">${e.score||0}%</div></div>`;
+    list.appendChild(d);
+  });
+  if(!myRank){document.getElementById('rbRank').textContent=entries.length+'+';document.getElementById('rankPill').textContent='#—';}
+}
 
-const exercises = [
-  { name:'Neck Stretch', nameTH:'ยืดคอ', duration:20, description:'เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ', imageUrl:'https://i.imgur.com/OXAzoA9.jpeg', tips:['อย่ากดหัวแรงเกินไป','หายใจลึกๆ','ค้าง 15-20 วินาที'], targetPose:'neck_stretch' },
-  { name:'Shoulder Roll', nameTH:'หมุนไหล่', duration:20, description:'หมุนไหล่ทั้งสองข้างไปข้างหน้า 10 ครั้ง', imageUrl:'https://i.imgur.com/P65kbKR.jpeg', tips:['หมุนช้าๆ','ยกไหล่เต็มที่','หายใจสม่ำเสมอ'], targetPose:'shoulder_roll' },
-  { name:'Back Stretch', nameTH:'ยืดหลัง', duration:20, description:'นั่งตรง ประสานมือ เหยียดแขนไปข้างหน้า', imageUrl:'https://i.imgur.com/b7E6da1.jpeg', tips:['ประสานมือแน่น','โค้งหลังออกมา','ค้าง 15-20 วินาที'], targetPose:'back_stretch' },
-  { name:'Side Bend', nameTH:'โน้มข้าง', duration:20, description:'ยืนตรง ยกมือขึ้น โน้มตัวไปข้าง สลับซ้าย-ขวา', imageUrl:'https://i.imgur.com/ECdLcCI.jpeg', tips:['เท้าห่างเท่าไหล่','ยกมือขึ้นเหนือหัว','รู้สึกยืดสีข้าง'], targetPose:'side_bend' },
-  { name:'Chest Opener', nameTH:'เปิดอก', duration:20, description:'ประสานมือหลังหัว ดันอกไปข้างหน้า', imageUrl:'https://i.imgur.com/Z3BY6cS.jpeg', tips:['ประสานมือหลังหัว','ดันอกออกมา','ศอกชี้ออกด้านข้าง'], targetPose:'chest_opener' },
-  { name:'Hip Flexor', nameTH:'ยืดสะโพก', duration:20, description:'ย่อเข่าครึ่งทาง เอนตัวไปข้างหลัง', imageUrl:'https://i.imgur.com/BxBSsp4.jpeg', tips:['ท่า Lunge เข่าตั้งฉาก','เอนหลังเล็กน้อย','รู้สึกยืดสะโพก'], targetPose:'hip_flexor' },
-  { name:'Quad Stretch', nameTH:'ยืดต้นขา', duration:20, description:'ยืนขาเดียว จับเท้าข้างหลัง ดึงเข้าหาก้น', imageUrl:'https://i.imgur.com/rBhEIeQ.jpeg', tips:['ยืนขาเดียว','ดึงส้นเท้าเข้าหาก้น','จับผนังช่วยทรงตัว'], targetPose:'quad_stretch' },
-  { name:'Calf Stretch', nameTH:'ยืดน่อง', duration:20, description:'ก้าวเท้าหนึ่งไปหน้า เหยียดเข่าหลัง ส้นติดพื้น', imageUrl:'https://i.imgur.com/ftA6SpQ.jpeg', tips:['ก้าวเท้าหนึ่งข้าง','เข่าหลังตึง','รู้สึกยืดน่อง'], targetPose:'calf_stretch' }
+// ═══════════════════════════════════════════════════
+// TUTORIAL
+// ═══════════════════════════════════════════════════
+let curSlide=0;
+function buildTut(){
+  const c=document.getElementById('tutCarousel'),dots=document.getElementById('tutDots');
+  c.innerHTML='';dots.innerHTML='';
+  EXERCISES.forEach((ex,i)=>{
+    const it=document.createElement('div');it.className='c-item'+(i===0?' active':'');
+    it.innerHTML=`<div class="ex-card"><div class="ex-img"><div class="ex-emoji">${['🧘','💪','🙆','🤸','🦸','🦵','🏃','🚶'][i]}</div></div><div class="ex-details"><span class="ex-num">ท่าที่ ${i+1}/8</span><h3 class="ex-card-ttl">${ex.name}</h3><p class="ex-card-sub">${ex.nameTH}</p><p class="ex-card-desc">${ex.description}</p><div class="ex-benefits"><div class="ben-ttl">💡 ประโยชน์</div><ul class="ben-list">${ex.tips.map(t=>`<li>${t}</li>`).join('')}</ul></div></div></div>`;
+    c.appendChild(it);
+    const d=document.createElement('div');d.className='c-dot'+(i===0?' active':'');d.onclick=()=>goSlide(i);dots.appendChild(d);
+  });
+  document.getElementById('prevBtn').disabled=true;
+}
+function showSlide(n){
+  const its=document.querySelectorAll('.c-item'),ds=document.querySelectorAll('.c-dot');
+  if(n>=EXERCISES.length)curSlide=EXERCISES.length-1;else if(n<0)curSlide=0;else curSlide=n;
+  its.forEach((it,i)=>it.classList.toggle('active',i===curSlide));
+  ds.forEach((d,i)=>d.classList.toggle('active',i===curSlide));
+  document.getElementById('prevBtn').disabled=curSlide===0;
+  document.getElementById('nextBtn').disabled=curSlide===EXERCISES.length-1;
+}
+function changeSlide(d){showSlide(curSlide+d);}
+function goSlide(i){showSlide(i);}
+function skipTut(){document.getElementById('tutModal').style.display='none';}
+function doneTut(){document.getElementById('tutModal').style.display='none';localStorage.setItem('tutDone','1');}
+
+// ═══════════════════════════════════════════════════
+// EXERCISES DATA
+// ═══════════════════════════════════════════════════
+const EXERCISES=[
+  {name:'Neck Stretch',nameTH:'ยืดคอ',duration:20,description:'เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ รู้สึกถึงการยืดที่คอ',imageUrl:'https://i.imgur.com/OXAzoA9.jpeg',tips:['อย่ากดหัวแรงเกินไป','หายใจลึกๆ','ค้าง 15-20 วินาที']},
+  {name:'Shoulder Roll',nameTH:'หมุนไหล่',duration:20,description:'หมุนไหล่ทั้งสองข้างไปข้างหน้า 10 ครั้ง แล้วข้างหลัง',imageUrl:'https://i.imgur.com/P65kbKR.jpeg',tips:['หมุนช้าๆ','ยกไหล่เต็มที่','หายใจสม่ำเสมอ']},
+  {name:'Back Stretch',nameTH:'ยืดหลัง',duration:20,description:'นั่งตรง ประสานมือ เหยียดแขนไปข้างหน้า โค้งหลัง',imageUrl:'https://i.imgur.com/b7E6da1.jpeg',tips:['ประสานมือแน่น','โค้งหลังออกมา','ค้าง 15-20 วินาที']},
+  {name:'Side Bend',nameTH:'โน้มข้าง',duration:20,description:'ยืนตรง ยกมือข้างหนึ่งขึ้น โน้มตัวไปอีกข้าง สลับ',imageUrl:'https://i.imgur.com/ECdLcCI.jpeg',tips:['เท้าห่างเท่าไหล่','ยกมือขึ้นเหนือหัว','รู้สึกยืดสีข้าง']},
+  {name:'Chest Opener',nameTH:'เปิดอก',duration:20,description:'ประสานมือหลังหัว ดันอกไปข้างหน้า เหยียดหลัง',imageUrl:'https://i.imgur.com/Z3BY6cS.jpeg',tips:['ประสานมือหลังหัว','ดันอกออกมา','ศอกชี้ออกด้านข้าง']},
+  {name:'Hip Flexor',nameTH:'ยืดสะโพก',duration:20,description:'ย่อเข่าครึ่งทาง เอนตัวไปข้างหลัง รู้สึกยืดที่ขาหน้า',imageUrl:'https://i.imgur.com/BxBSsp4.jpeg',tips:['ท่า Lunge เข่าตั้งฉาก','เอนหลังเล็กน้อย','รู้สึกยืดสะโพก']},
+  {name:'Quad Stretch',nameTH:'ยืดต้นขา',duration:20,description:'ยืนขาเดียว จับเท้าข้างหลัง ดึงเข้าหาก้น',imageUrl:'https://i.imgur.com/rBhEIeQ.jpeg',tips:['ยืนขาเดียว','ดึงส้นเท้าเข้าหาก้น','จับผนังช่วยทรงตัว']},
+  {name:'Calf Stretch',nameTH:'ยืดน่อง',duration:20,description:'ก้าวเท้าหนึ่งไปหน้า เหยียดเข่าหลัง ส้นติดพื้น',imageUrl:'https://i.imgur.com/ftA6SpQ.jpeg',tips:['ก้าวเท้าหนึ่งข้าง','เข่าหลังตึง','รู้สึกยืดน่อง']}
 ];
 
-function buildExerciseList() {
-  const list = document.getElementById('exerciseList');
-  list.innerHTML = '';
-  exercises.forEach((ex, i) => {
-    const li = document.createElement('li');
-    li.className = 'exercise-item' + (i === 0 ? ' current' : '');
-    li.innerHTML = `<span class="exercise-name">${i+1}. ${ex.name} (${ex.nameTH})</span><span class="exercise-score score-pending">—</span>`;
+// ═══════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════
+const gs={exIdx:0,scores:[],paused:false,active:false,time:20,acc:0,streak:0,pts:0};
+
+function buildExList(){
+  const list=document.getElementById('exList');list.innerHTML='';
+  EXERCISES.forEach((ex,i)=>{
+    const li=document.createElement('li');li.className='ex-item'+(i===0?' current':'');
+    li.innerHTML=`<span class="ex-name">${i+1}. ${ex.name} (${ex.nameTH})</span><span class="ex-score sc-pend">—</span>`;
     list.appendChild(li);
   });
 }
+function initGS(){if(!player)return;gs.streak=player.streak;gs.pts=player.pts;document.getElementById('streak').textContent=gs.streak;document.getElementById('pts').textContent=gs.pts;}
 
-function initState() {
-  if (!currentPlayer) return;
-  gameState.streak = currentPlayer.streak;
-  gameState.totalPoints = currentPlayer.totalPoints;
-  document.getElementById('streak').textContent = gameState.streak;
-  document.getElementById('totalPoints').textContent = gameState.totalPoints;
-}
-
-// ============================================================
+// ═══════════════════════════════════════════════════
 // PREVIEW
-// ============================================================
-let previewCountdownInterval = null;
-
-function showExercisePreview(index) {
-  const ex = exercises[index];
-  if (!ex) return;
-  document.getElementById('previewNumber').textContent = `ท่าที่ ${index+1}/8`;
-  document.getElementById('previewTitle').textContent = ex.name;
-  document.getElementById('previewSubtitle').textContent = ex.nameTH;
-  document.getElementById('previewDescription').textContent = ex.description;
-
-  const img = document.getElementById('previewImage');
-  const loading = document.getElementById('imageLoading');
-  img.style.opacity = '0'; loading.style.display = 'block';
-  img.src = ex.imageUrl;
-  img.onload = () => { loading.style.display = 'none'; img.style.opacity = '1'; };
-  img.onerror = () => { loading.style.display = 'none'; img.src = 'https://via.placeholder.com/640x360?text=ภาพไม่พร้อมใช้งาน'; img.style.opacity = '1'; };
-
-  document.getElementById('exercisePreview').style.display = 'flex';
-  document.getElementById('previewCountdown').style.display = 'none';
-  document.querySelector('.preview-actions').style.display = 'flex';
-
-  if (firebaseReady && currentPlayer) addFeedEvent('exercise', currentPlayer.name, currentPlayer.avatarName, ex.nameTH);
+// ═══════════════════════════════════════════════════
+let prevCdI=null;
+function showPrev(idx){
+  const ex=EXERCISES[idx];if(!ex)return;
+  document.getElementById('prevNum').textContent=`ท่าที่ ${idx+1}/8`;
+  document.getElementById('prevTitle').textContent=ex.name;
+  document.getElementById('prevSub').textContent=ex.nameTH;
+  document.getElementById('prevDescTxt').textContent=ex.description;
+  const img=document.getElementById('prevImg'),ld=document.getElementById('imgLoad');
+  img.style.opacity='0';ld.style.display='block';img.src=ex.imageUrl;
+  img.onload=()=>{ld.style.display='none';img.style.opacity='1';};
+  img.onerror=()=>{ld.style.display='none';img.src='https://via.placeholder.com/640x360?text=ภาพไม่พร้อม';img.style.opacity='1';};
+  document.getElementById('prevOverlay').style.display='flex';
+  document.getElementById('prevCd').style.display='none';
+  document.querySelector('.prev-actions').style.display='flex';
+  if(fbOk&&player)fbAddFeed('exercise',player.name,player.avName,ex.nameTH);
 }
-
-function startExerciseFromPreview() {
-  const countdown = document.getElementById('previewCountdown');
-  const actions = document.querySelector('.preview-actions');
-  countdown.style.display = 'block'; actions.style.display = 'none';
-  let n = 3;
-  document.getElementById('previewCountdownValue').textContent = n;
-  previewCountdownInterval = setInterval(() => {
-    n--;
-    if (n > 0) { document.getElementById('previewCountdownValue').textContent = n; }
-    else {
-      clearInterval(previewCountdownInterval);
-      document.getElementById('exercisePreview').style.display = 'none';
-      actions.style.display = 'flex';
-      startTimer();
-    }
-  }, 1000);
+function startFromPrev(){
+  const cd=document.getElementById('prevCd'),ac=document.querySelector('.prev-actions');
+  cd.style.display='block';ac.style.display='none';let n=3;
+  document.getElementById('cdVal').textContent=n;
+  prevCdI=setInterval(()=>{n--;if(n>0)document.getElementById('cdVal').textContent=n;else{clearInterval(prevCdI);document.getElementById('prevOverlay').style.display='none';ac.style.display='flex';startTimer();}},1000);
 }
+function skipPrev(){clearInterval(prevCdI);document.getElementById('prevOverlay').style.display='none';document.querySelector('.prev-actions').style.display='flex';startTimer();}
 
-function skipPreview() {
-  clearInterval(previewCountdownInterval);
-  document.getElementById('exercisePreview').style.display = 'none';
-  document.querySelector('.preview-actions').style.display = 'flex';
-  startTimer();
-}
+// ═══════════════════════════════════════════════════
+// CAMERA & MEDIAPIPE
+// ═══════════════════════════════════════════════════
+let camObj=null,poseObj=null,cvCtx=null;
 
-// ============================================================
-// CAMERA
-// ============================================================
-let camera = null, pose = null, canvasCtx = null;
-
-async function startCamera() {
-  const overlay = document.getElementById('cameraOverlay');
-  overlay.innerHTML = '<div style="text-align:center;"><div class="loading-spinner"></div><div style="color:white;">กำลังเปิดกล้อง...</div></div>';
-  try {
-    const video = document.getElementById('webcam');
-    const canvas = document.getElementById('canvas');
-    canvasCtx = canvas.getContext('2d');
-    pose = new Pose({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
-    pose.setOptions({ modelComplexity:1, smoothLandmarks:true, enableSegmentation:false, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
-    pose.onResults(onPoseResults);
-    camera = new Camera(video, { onFrame: async () => { await pose.send({ image: video }); }, width:640, height:480 });
-    await camera.start();
-    overlay.style.display = 'none';
+async function startCamera(){
+  const ov=document.getElementById('camOverlay');
+  ov.innerHTML='<div style="text-align:center"><div class="spin"></div><div style="color:white">กำลังเปิดกล้อง...</div></div>';
+  try{
+    const video=document.getElementById('webcam'),canvas=document.getElementById('canvas');
+    cvCtx=canvas.getContext('2d');
+    poseObj=new Pose({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+    poseObj.setOptions({modelComplexity:1,smoothLandmarks:true,enableSegmentation:false,minDetectionConfidence:.5,minTrackingConfidence:.5});
+    poseObj.onResults(onPose);
+    camObj=new Camera(video,{onFrame:async()=>{await poseObj.send({image:video});},width:640,height:480});
+    await camObj.start();
+    // Grab stream for WebRTC
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'},audio:false});
+    // Use MediaPipe's camera video element if stream not on video
+    if(!video.srcObject)video.srcObject=stream;
+    setLocalStream(video.srcObject||stream);
+    document.getElementById('myStrip').style.display='flex';
+    ov.style.display='none';
     startGame();
-  } catch (err) {
-    overlay.innerHTML = `<div class="overlay-content"><div style="font-size:2rem;margin-bottom:0.75rem;">❌</div><div>ไม่สามารถเข้าถึงกล้องได้</div><button onclick="startCamera()">🔄 ลองอีกครั้ง</button><button onclick="startDemoMode()">🎮 โหมดทดสอบ</button></div>`;
+  }catch(err){
+    console.error(err);
+    ov.innerHTML=`<div class="overlay-content"><div style="font-size:2rem;margin-bottom:.75rem">❌</div><div>ไม่สามารถเข้าถึงกล้องได้</div><button onclick="startCamera()">🔄 ลองอีกครั้ง</button><button onclick="startDemo()">🎮 โหมดทดสอบ</button></div>`;
   }
 }
 
-function onPoseResults(results) {
-  if (!results.poseLandmarks || gameState.isPaused || !gameState.isGameActive) return;
-  const canvas = document.getElementById('canvas'), video = document.getElementById('webcam');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  canvasCtx.save(); canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-  drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color:'#667eea', lineWidth:4 });
-  drawLandmarks(canvasCtx, results.poseLandmarks, { color:'#764ba2', lineWidth:2, radius:6 });
-  canvasCtx.restore();
-  updateAccuracy(calculatePoseAccuracy(results.poseLandmarks));
+function onPose(results){
+  if(!results.poseLandmarks||gs.paused||!gs.active)return;
+  const canvas=document.getElementById('canvas'),video=document.getElementById('webcam');
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  cvCtx.save();cvCtx.clearRect(0,0,canvas.width,canvas.height);
+  drawConnectors(cvCtx,results.poseLandmarks,POSE_CONNECTIONS,{color:'#667eea',lineWidth:4});
+  drawLandmarks(cvCtx,results.poseLandmarks,{color:'#764ba2',lineWidth:2,radius:6});
+  cvCtx.restore();
+  updateAcc(calcAcc(results.poseLandmarks));
 }
 
-function calculatePoseAccuracy(lm) {
-  const nose=lm[0], ls=lm[11], rs=lm[12], lh=lm[23], rh=lm[24];
-  const sw=Math.abs(ls.x-rs.x), ba=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2);
-  let score=70;
-  if(sw>0.15&&sw<0.35) score+=10;
-  if(ba<0.05) score+=10;
-  if(nose.visibility>0.8) score+=10;
-  score+=Math.random()*10-5;
-  return Math.max(0,Math.min(100,Math.round(score)));
+function calcAcc(lm){
+  const no=lm[0],ls=lm[11],rs=lm[12],lh=lm[23],rh=lm[24];
+  const sw=Math.abs(ls.x-rs.x),ba=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2);
+  let s=70;if(sw>.15&&sw<.35)s+=10;if(ba<.05)s+=10;if(no.visibility>.8)s+=10;s+=Math.random()*10-5;
+  return Math.max(0,Math.min(100,Math.round(s)));
 }
 
-function updateAccuracy(val) {
-  gameState.currentAccuracy = val;
-  document.getElementById('accuracyValue').textContent = val + '%';
-  const statusEl=document.getElementById('accuracyStatus'), box=document.getElementById('feedbackBox'), text=document.getElementById('feedbackText');
-  if(val>=90){statusEl.textContent='🎉 Perfect!';statusEl.className='accuracy-status status-excellent';text.textContent='ยอดเยี่ยม!';box.style.cssText='display:block;background:#DCFCE7;border-left:4px solid #10B981;';}
-  else if(val>=80){statusEl.textContent='👍 Great!';statusEl.className='accuracy-status status-good';text.textContent='ดีมาก!';box.style.cssText='display:block;background:#E8EEFF;border-left:4px solid #2196F3;';}
-  else if(val>=50){statusEl.textContent='⚠️ ปรับท่า';statusEl.className='accuracy-status status-warning';text.textContent='ลองปรับท่าให้ดีขึ้น';box.style.cssText='display:block;background:#FFF9E6;border-left:4px solid #F59E0B;';}
-  else{statusEl.textContent='❌ ปรับปรุง';statusEl.className='accuracy-status status-danger';text.textContent='ยืดให้มากกว่านี้';box.style.cssText='display:block;background:#FEE2E2;border-left:4px solid #EF4444;';}
-  updateLiveStatus(gameState.currentExerciseIndex, val);
+function updateAcc(val){
+  gs.acc=val;
+  document.getElementById('accVal').textContent=val+'%';
+  const st=document.getElementById('accStatus'),box=document.getElementById('fbBox'),txt=document.getElementById('fbTxt');
+  if(val>=90){st.textContent='🎉 Perfect!';st.className='acc-status s-ex';txt.textContent='ยอดเยี่ยม!';box.style.cssText='display:block;background:#DCFCE7;border-left:4px solid #10B981;';}
+  else if(val>=80){st.textContent='👍 Great!';st.className='acc-status s-good';txt.textContent='ดีมาก!';box.style.cssText='display:block;background:#E8EEFF;border-left:4px solid #2196F3;';}
+  else if(val>=50){st.textContent='⚠️ ปรับท่า';st.className='acc-status s-warn';txt.textContent='ลองปรับท่าให้ดีขึ้น';box.style.cssText='display:block;background:#FFF9E6;border-left:4px solid #F59E0B;';}
+  else{st.textContent='❌ ปรับปรุง';st.className='acc-status s-danger';txt.textContent='ยืดให้มากกว่านี้';box.style.cssText='display:block;background:#FEE2E2;border-left:4px solid #EF4444;';}
+  fbUpdateLive(gs.exIdx,val);
+  if(gOpen)renderGrid();
 }
 
-// ============================================================
+// ═══════════════════════════════════════════════════
 // GAME FLOW
-// ============================================================
-function startGame() {
-  gameState.isGameActive=true; gameState.currentExerciseIndex=0; gameState.exerciseScores=[];
-  loadExercise(0);
+// ═══════════════════════════════════════════════════
+function startGame(){gs.active=true;gs.exIdx=0;gs.scores=[];loadEx(0);}
+function loadEx(idx){
+  if(idx>=EXERCISES.length){endGame();return;}
+  const ex=EXERCISES[idx];
+  gs.exIdx=idx;gs.time=ex.duration;
+  document.getElementById('exTitle').textContent=`${idx+1}. ${ex.nameTH}`;
+  document.getElementById('exDesc').textContent=ex.description;
+  document.getElementById('curEx').textContent=idx+1;
+  document.getElementById('progFill').style.width=((idx/EXERCISES.length)*100)+'%';
+  const its=document.querySelectorAll('.ex-item');
+  its.forEach((it,i)=>{it.classList.remove('current','completed');if(i===idx)it.classList.add('current');else if(i<idx)it.classList.add('completed');});
+  showPrev(idx);
 }
-
-function loadExercise(index) {
-  if(index>=exercises.length){endGame();return;}
-  const ex=exercises[index];
-  gameState.currentExerciseIndex=index; gameState.timeRemaining=ex.duration;
-  document.getElementById('exerciseTitle').textContent=`${index+1}. ${ex.nameTH}`;
-  document.getElementById('exerciseDesc').textContent=ex.description;
-  document.getElementById('currentExercise').textContent=index+1;
-  document.getElementById('progressFill').style.width=((index/exercises.length)*100)+'%';
-  const items=document.querySelectorAll('.exercise-item');
-  items.forEach((item,i)=>{item.classList.remove('current','completed');if(i===index)item.classList.add('current');else if(i<index)item.classList.add('completed');});
-  showExercisePreview(index);
-}
-
-let timerInterval=null;
-
-function startTimer() {
-  clearInterval(timerInterval);
-  document.getElementById('timerValue').textContent=gameState.timeRemaining;
-  timerInterval=setInterval(()=>{
-    if(gameState.isPaused)return;
-    gameState.timeRemaining--;
-    document.getElementById('timerValue').textContent=gameState.timeRemaining;
-    if(gameState.timeRemaining<=0){clearInterval(timerInterval);completeExercise();}
+let timI=null;
+function startTimer(){
+  clearInterval(timI);document.getElementById('timerVal').textContent=gs.time;
+  timI=setInterval(()=>{
+    if(gs.paused)return;gs.time--;document.getElementById('timerVal').textContent=gs.time;
+    if(gs.time<=0){clearInterval(timI);completeEx();}
   },1000);
 }
-
-function completeExercise() {
-  const score=gameState.currentAccuracy;
-  gameState.exerciseScores.push(score);
-  const items=document.querySelectorAll('.exercise-item');
-  const span=items[gameState.currentExerciseIndex].querySelector('.exercise-score');
-  span.textContent=score+'%';
-  span.className=score>=90?'exercise-score score-excellent':score>=80?'exercise-score score-good':'exercise-score score-warning';
-  showToast(score>=90?'🌟':score>=80?'👍':'💪', exercises[gameState.currentExerciseIndex].nameTH, `ได้ ${score}%`);
-  setTimeout(()=>loadExercise(gameState.currentExerciseIndex+1),1500);
+function completeEx(){
+  const sc=gs.acc;gs.scores.push(sc);
+  const its=document.querySelectorAll('.ex-item');
+  const sp=its[gs.exIdx].querySelector('.ex-score');
+  sp.textContent=sc+'%';sp.className=sc>=90?'ex-score sc-ex':sc>=80?'ex-score sc-good':'ex-score sc-warn';
+  toast(sc>=90?'🌟':sc>=80?'👍':'💪',EXERCISES[gs.exIdx].nameTH,`ได้ ${sc}%`);
+  setTimeout(()=>loadEx(gs.exIdx+1),1500);
 }
-
-function skipExercise() {
-  if(!gameState.isGameActive)return;
-  clearInterval(timerInterval);
-  gameState.exerciseScores.push(0);
-  const items=document.querySelectorAll('.exercise-item');
-  const span=items[gameState.currentExerciseIndex].querySelector('.exercise-score');
-  span.textContent='Skip'; span.className='exercise-score score-pending';
-  loadExercise(gameState.currentExerciseIndex+1);
+function skipEx(){
+  if(!gs.active)return;clearInterval(timI);gs.scores.push(0);
+  const its=document.querySelectorAll('.ex-item');
+  const sp=its[gs.exIdx].querySelector('.ex-score');
+  sp.textContent='Skip';sp.className='ex-score sc-pend';loadEx(gs.exIdx+1);
 }
-
-function pauseGame() {
-  gameState.isPaused=!gameState.isPaused;
-  const btn=document.getElementById('pauseBtn');
-  if(gameState.isPaused){btn.innerHTML='▶️ เล่นต่อ';btn.classList.replace('btn-secondary','btn-primary');}
-  else{btn.innerHTML='⏸️ หยุดชั่วคราว';btn.classList.replace('btn-primary','btn-secondary');}
+function pauseGame(){
+  gs.paused=!gs.paused;const btn=document.getElementById('pauseBtn');
+  if(gs.paused){btn.innerHTML='▶️ เล่นต่อ';btn.classList.replace('btn-s','btn-p');}
+  else{btn.innerHTML='⏸️ หยุดชั่วคราว';btn.classList.replace('btn-p','btn-s');}
 }
-
-function endGame() {
-  gameState.isGameActive=false; clearInterval(timerInterval);
-  const scores=gameState.exerciseScores.filter(s=>s>0);
-  const avgScore=scores.length>0?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
-  gameState.streak++; const pts=Math.round(avgScore*1.5); gameState.totalPoints+=pts;
-  if(currentPlayer){currentPlayer.streak=gameState.streak;currentPlayer.totalPoints=gameState.totalPoints;currentPlayer.lastScore=avgScore;}
-  localStorage.setItem('streak',gameState.streak); localStorage.setItem('totalPoints',gameState.totalPoints);
-  if(firebaseReady&&currentPlayer){
-    saveScore(avgScore,gameState.exerciseScores.length);
-    addFeedEvent('complete',currentPlayer.name,currentPlayer.avatarName,avgScore);
-    db.ref(`live/${sessionId}`).update({isPlaying:false,score:avgScore});
+function endGame(){
+  gs.active=false;clearInterval(timI);
+  const sc=gs.scores.filter(s=>s>0);
+  const avg=sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):0;
+  gs.streak++;const pts=Math.round(avg*1.5);gs.pts+=pts;
+  if(player){player.streak=gs.streak;player.pts=gs.pts;}
+  localStorage.setItem('streak',gs.streak);localStorage.setItem('pts',gs.pts);
+  if(fbOk&&player){
+    fbSaveScore(avg,gs.scores.length);
+    fbAddFeed('complete',player.name,player.avName,avg);
+    db.ref(`live/${sid}`).update({isPlaying:false,score:avg});
   }
-  document.getElementById('totalPoints').textContent=gameState.totalPoints;
-  document.getElementById('bannerPoints').textContent=gameState.totalPoints+' pts';
-  document.getElementById('streak').textContent=gameState.streak;
-  if(firebaseReady) setTimeout(()=>switchTab(currentTab),1000);
-  showResults(avgScore,pts);
+  document.getElementById('pts').textContent=gs.pts;document.getElementById('rbPts').textContent=gs.pts+' pts';
+  document.getElementById('streak').textContent=gs.streak;
+  if(fbOk)setTimeout(()=>switchTab(curTab),1000);
+  showResults(avg,pts);
 }
-
-function showResults(avgScore, ptsEarned) {
-  const overlay=document.getElementById('cameraOverlay');
-  overlay.style.display='flex'; overlay.style.background='rgba(0,0,0,0.95)';
-  const rank=document.getElementById('bannerRank').textContent;
-  const av=currentPlayer?getAvatarById(currentPlayer.avatarId):cartoonAvatars[0];
-  overlay.innerHTML=`
-    <div class="overlay-content" style="max-width:480px;">
-      <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid white;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;overflow:hidden;">
-        ${av.svg.replace('viewBox="0 0 60 60"','viewBox="0 0 60 60" width="64" height="64"')}
-      </div>
-      <h2 style="font-size:2rem;margin-bottom:1rem;">🎉 เสร็จสิ้น!</h2>
-      <div style="background:rgba(255,255,255,0.15);padding:1.5rem;border-radius:1rem;margin-bottom:1rem;">
-        <div style="font-size:3.5rem;font-weight:700;">${avgScore}%</div>
-        <div style="opacity:0.9;">คะแนนเฉลี่ย</div>
-      </div>
-      <div style="background:rgba(255,255,255,0.1);padding:1.25rem;border-radius:1rem;margin-bottom:1rem;text-align:left;">
-        <div style="margin-bottom:0.5rem;">📊 ท่าที่ทำ: ${gameState.exerciseScores.length}/8</div>
-        <div style="margin-bottom:0.5rem;">💎 Points: +${ptsEarned} (รวม ${gameState.totalPoints})</div>
-        <div style="margin-bottom:0.5rem;">🔥 Streak: ${gameState.streak} วัน</div>
-        <div>🏆 อันดับ: #${rank}</div>
-      </div>
-      <div style="display:flex;gap:0.75rem;">
-        <button onclick="location.href='index.html'" style="flex:1;padding:0.875rem;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:0.75rem;font-weight:600;cursor:pointer;font-family:'Prompt',sans-serif;">🏠 กลับหน้าหลัก</button>
-        <button onclick="location.reload()" style="flex:1;padding:0.875rem;background:white;color:#667eea;border:none;border-radius:0.75rem;font-weight:700;cursor:pointer;font-family:'Prompt',sans-serif;">🔄 เล่นอีกรอบ</button>
-      </div>
-    </div>
-  `;
+function showResults(avg,ptsE){
+  const ov=document.getElementById('camOverlay');
+  ov.style.display='flex';ov.style.background='rgba(0,0,0,.95)';
+  const rank=document.getElementById('rbRank').textContent;
+  const av=player?getAv(player.avId):AVS[0];
+  ov.innerHTML=`<div class="overlay-content" style="max-width:480px"><div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid white;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;overflow:hidden">${av.svg.replace('<svg ','<svg width="64" height="64" ')}</div><h2 style="font-size:2rem;margin-bottom:1rem">🎉 เสร็จสิ้น!</h2><div style="background:rgba(255,255,255,.15);padding:1.5rem;border-radius:1rem;margin-bottom:1rem"><div style="font-size:3.5rem;font-weight:700">${avg}%</div><div style="opacity:.9">คะแนนเฉลี่ย</div></div><div style="background:rgba(255,255,255,.1);padding:1.25rem;border-radius:1rem;margin-bottom:1rem;text-align:left"><div style="margin-bottom:.5rem">📊 ท่าที่ทำ: ${gs.scores.length}/8</div><div style="margin-bottom:.5rem">💎 Points: +${ptsE} (รวม ${gs.pts})</div><div style="margin-bottom:.5rem">🔥 Streak: ${gs.streak} วัน</div><div>🏆 อันดับ: #${rank}</div></div><div style="display:flex;gap:.75rem"><button onclick="location.href='index.html'" style="flex:1;padding:.875rem;background:rgba(255,255,255,.2);color:white;border:2px solid white;border-radius:.75rem;font-weight:600;cursor:pointer;font-family:'Prompt',sans-serif">🏠 กลับหน้าหลัก</button><button onclick="location.reload()" style="flex:1;padding:.875rem;background:white;color:#667eea;border:none;border-radius:.75rem;font-weight:700;cursor:pointer;font-family:'Prompt',sans-serif">🔄 เล่นอีกรอบ</button></div></div>`;
 }
-
-function startDemoMode() {
-  document.getElementById('cameraOverlay').style.display='none';
+function startDemo(){
+  document.getElementById('camOverlay').style.display='none';
+  document.getElementById('myStrip').style.display='flex';
   startGame();
-  setInterval(()=>{ if(!gameState.isPaused&&gameState.isGameActive) updateAccuracy(Math.round(60+Math.random()*35)); },800);
+  setInterval(()=>{if(!gs.paused&&gs.active)updateAcc(Math.round(60+Math.random()*35));},800);
 }
 
-// ============================================================
-// TOAST
-// ============================================================
-function showToast(icon, title, msg, duration=3500) {
-  const container=document.getElementById('toastContainer');
-  const toast=document.createElement('div');
-  toast.className='toast';
-  toast.innerHTML=`<div class="toast-icon">${icon}</div><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
-  container.appendChild(toast);
-  setTimeout(()=>{ toast.style.animation='toastOut 0.4s ease forwards'; setTimeout(()=>toast.remove(),400); },duration);
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function toast(icon,title,msg,dur=3500){
+  const c=document.getElementById('toastWrap');
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<div class="ti">${icon}</div><div class="tb"><div class="tt">${title}</div><div class="tm">${msg}</div></div>`;
+  c.appendChild(t);setTimeout(()=>{t.style.animation='tOut .4s ease forwards';setTimeout(()=>t.remove(),400);},dur);
 }
+function ago(ts){const d=Date.now()-ts,m=Math.floor(d/60000),s=Math.floor(d/1000);if(s<60)return'เมื่อกี้';if(m<60)return`${m} นาทีที่แล้ว`;return`${Math.floor(m/60)} ชม.ที่แล้ว`;}
 
-function getTimeAgo(timestamp) {
-  const diff=Date.now()-timestamp, mins=Math.floor(diff/60000), secs=Math.floor(diff/1000);
-  if(secs<60)return'เมื่อกี้'; if(mins<60)return`${mins} นาทีที่แล้ว`; return`${Math.floor(mins/60)} ชม.ที่แล้ว`;
-}
+// ═══════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('loginScreen').style.display!=='none')return;
+  if(e.key==='g'||e.key==='G'){gOpen?closeGallery():openGallery();}
+  if(e.key==='Escape'){if(gOpen)closeGallery();const m=document.getElementById('tutModal');if(m&&m.style.display==='flex')skipTut();}
+  if(e.key==='ArrowLeft'){const m=document.getElementById('tutModal');if(m&&m.style.display==='flex')changeSlide(-1);}
+  if(e.key==='ArrowRight'){const m=document.getElementById('tutModal');if(m&&m.style.display==='flex')changeSlide(1);}
+});
 
-// ============================================================
+// ═══════════════════════════════════════════════════
 // INIT
-// ============================================================
-window.addEventListener('load', ()=>{
-  initAvatarGrid();
-
-  const savedName=localStorage.getItem('playerName');
-  const savedAvatarId=localStorage.getItem('playerAvatarId');
-  const savedDept=localStorage.getItem('playerDept');
-
-  if(savedName) document.getElementById('usernameInput').value=savedName;
-  if(savedDept) document.getElementById('departmentInput').value=savedDept;
-  if(savedAvatarId){
-    const idx=cartoonAvatars.findIndex(a=>a.id===savedAvatarId);
-    if(idx>=0){
-      selectedAvatarId=savedAvatarId;
-      setTimeout(()=>{
-        const opts=document.querySelectorAll('.avatar-option');
-        opts.forEach((o,i)=>o.classList.toggle('selected',i===idx));
-        updateSelectedPreview(cartoonAvatars[idx]);
-      },100);
-    }
+// ═══════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initAvGrid();
+  const sn=localStorage.getItem('pName'),sa=localStorage.getItem('pAv'),sd=localStorage.getItem('pDept');
+  if(sn)document.getElementById('nameIn').value=sn;
+  if(sd)document.getElementById('deptIn').value=sd;
+  if(sa){
+    const idx=AVS.findIndex(a=>a.id===sa);
+    if(idx>=0){selAvId=sa;setTimeout(()=>{const opts=document.querySelectorAll('.avatar-option');opts.forEach((o,i)=>o.classList.toggle('selected',i===idx));updateSelPrev(AVS[idx]);},100);}
   }
-
-  if(firebaseReady){
-    db.ref('live').on('value',snap=>{
-      document.getElementById('onlineCountBadge').textContent=`${snap.numChildren()} คนออนไลน์อยู่ตอนนี้`;
-    });
-  } else {
-    document.getElementById('onlineCountBadge').textContent='โหมดออฟไลน์';
-  }
-
-  document.addEventListener('keydown',e=>{
-    const modal=document.getElementById('tutorialModal');
-    if(modal&&modal.style.display==='flex'){
-      if(e.key==='ArrowLeft')changeSlide(-1);
-      if(e.key==='ArrowRight')changeSlide(1);
-      if(e.key==='Escape')skipTutorial();
-    }
-  });
+  if(fbOk)db.ref('live').on('value',snap=>document.getElementById('onlineBadge').textContent=`${snap.numChildren()} คนออนไลน์อยู่ตอนนี้`);
+  else document.getElementById('onlineBadge').textContent='โหมดออฟไลน์';
 });
 </script>
 </body>
