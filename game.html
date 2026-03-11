@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>เล่นเกม - Office Syndrome Fitness Game</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Prompt', sans-serif;
@@ -19,2023 +19,1879 @@
       overflow-x: hidden;
     }
 
-    .game-container {
-      max-width: 1400px;
-      margin: 0 auto;
+    .login-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 2rem;
     }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      color: white;
+    .login-card {
+      background: white;
+      border-radius: 2rem;
+      padding: 2.5rem;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+      animation: slideUp 0.5s ease;
     }
 
-    .back-link {
-      color: white;
-      text-decoration: none;
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-logo { font-size: 3.5rem; margin-bottom: 0.75rem; }
+    .login-title { font-size: 1.75rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem; }
+    .login-subtitle { color: #64748b; margin-bottom: 1.5rem; font-size: 0.95rem; }
+
+    .input-group { margin-bottom: 1.25rem; text-align: left; }
+    .input-group label { display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .input-group input {
+      width: 100%; padding: 0.875rem 1.25rem;
+      border: 2px solid #E5E7EB; border-radius: 0.75rem;
+      font-size: 1rem; font-family: 'Prompt', sans-serif;
+      color: #334155; outline: none; transition: border-color 0.3s;
+    }
+    .input-group input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
+
+    /* ===== AVATAR GRID ===== */
+    .avatar-section-label {
       font-weight: 600;
-      font-size: 1.125rem;
-      transition: transform 0.2s;
+      color: #334155;
+      font-size: 0.9rem;
+      text-align: left;
+      margin-bottom: 0.75rem;
     }
 
-    .back-link:hover {
-      transform: translateX(-5px);
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.625rem;
+      margin-bottom: 1.5rem;
     }
 
-    .header-right {
+    .avatar-option {
+      position: relative;
+      cursor: pointer;
+      border-radius: 1rem;
+      border: 3px solid transparent;
+      transition: all 0.25s ease;
+      background: #F8FAFC;
+      padding: 0.375rem;
+      aspect-ratio: 1;
       display: flex;
-      gap: 1rem;
       align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .avatar-option:hover {
+      transform: translateY(-4px) scale(1.05);
+      border-color: #a5b4fc;
+      background: #EEF2FF;
+      box-shadow: 0 8px 20px rgba(102,126,234,0.25);
+    }
+
+    .avatar-option.selected {
+      border-color: #667eea;
+      background: #E8EEFF;
+      box-shadow: 0 6px 18px rgba(102,126,234,0.4);
+      transform: translateY(-3px) scale(1.05);
+    }
+
+    .avatar-option.selected::after {
+      content: '✓';
+      position: absolute;
+      bottom: 2px; right: 4px;
+      font-size: 0.6rem;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      width: 14px; height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .avatar-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .avatar-name {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #334155;
+      color: white;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      white-space: nowrap;
+      opacity: 0;
+      transition: all 0.2s;
+      pointer-events: none;
+      font-family: 'Prompt', sans-serif;
+    }
+
+    .avatar-option:hover .avatar-name {
+      opacity: 1;
+      bottom: -18px;
+    }
+
+    /* Selected avatar display */
+    .selected-avatar-display {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: linear-gradient(135deg, #F0F4FF, #E8EEFF);
+      border-radius: 1rem;
+      padding: 0.875rem 1.25rem;
+      margin-bottom: 1.25rem;
+      border: 2px solid #C7D2FE;
+    }
+
+    .selected-avatar-preview {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+      flex-shrink: 0;
+    }
+
+    .selected-avatar-preview svg {
+      width: 44px;
+      height: 44px;
+    }
+
+    .selected-avatar-info { text-align: left; }
+    .selected-avatar-name { font-weight: 700; color: #334155; font-size: 1rem; }
+    .selected-avatar-desc { font-size: 0.8rem; color: #64748b; margin-top: 0.1rem; }
+
+    .btn-login {
+      width: 100%;
+      padding: 1.125rem;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; border: none; border-radius: 0.875rem;
+      font-size: 1.125rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s; font-family: 'Prompt', sans-serif;
+    }
+    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.4); }
+
+    .online-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: #DCFCE7; color: #15803D;
+      padding: 0.4rem 1rem; border-radius: 2rem;
+      font-size: 0.8rem; font-weight: 600; margin-bottom: 1.25rem;
+    }
+    .online-dot {
+      width: 7px; height: 7px; background: #22C55E;
+      border-radius: 50%; animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ===== GAME UI ===== */
+    .game-container { max-width: 1500px; margin: 0 auto; padding: 1.5rem; }
+
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem; color: white; flex-wrap: wrap; gap: 1rem;
+    }
+
+    .back-link { color: white; text-decoration: none; font-weight: 600; font-size: 1rem; }
+
+    .header-center {
+      display: flex; align-items: center; gap: 0.875rem;
+      background: rgba(255,255,255,0.2); padding: 0.75rem 1.25rem; border-radius: 2rem;
+    }
+
+    .header-avatar-wrap {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: white; border: 2px solid rgba(255,255,255,0.5);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+    }
+
+    .header-avatar-wrap svg { width: 36px; height: 36px; }
+
+    .header-username { font-weight: 700; font-size: 1.1rem; }
+
+    .header-right { display: flex; gap: 0.75rem; align-items: center; }
+
+    .stat-pill {
+      background: rgba(255,255,255,0.2); color: white;
+      padding: 0.5rem 1rem; border-radius: 2rem;
+      font-weight: 600; font-size: 0.875rem;
     }
 
     .game-layout {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 2rem;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 1.5rem;
     }
 
     .video-section {
-      background: white;
-      border-radius: 1.5rem;
-      padding: 2rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      position: relative;
+      background: white; border-radius: 1.5rem;
+      padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     }
 
     #webcam-container {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4/3;
-      background: #1a1a1a;
-      border-radius: 1rem;
-      overflow: hidden;
+      position: relative; width: 100%; aspect-ratio: 4/3;
+      background: #1a1a1a; border-radius: 1rem; overflow: hidden;
     }
 
-    #webcam {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    #webcam { width: 100%; height: 100%; object-fit: cover; }
 
-    #canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
+    #canvas { position: absolute; top:0; left:0; width:100%; height:100%; }
 
     .camera-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      font-size: 1.25rem;
-      z-index: 10;
+      position: absolute; top:0; left:0; right:0; bottom:0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.75); color: white; z-index: 10;
     }
 
-    .overlay-content {
-      text-align: center;
-    }
+    .overlay-content { text-align: center; padding: 2rem; }
 
     .overlay-content button {
-      margin-top: 1rem;
-      padding: 1rem 2rem;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 0.75rem;
-      font-size: 1.125rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-family: 'Prompt', sans-serif;
+      margin-top: 0.75rem; padding: 0.875rem 1.75rem;
+      background: #667eea; color: white; border: none;
+      border-radius: 0.75rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer; font-family: 'Prompt', sans-serif;
+      display: block; width: 100%; transition: all 0.3s;
     }
+    .overlay-content button:hover { background: #5568d3; }
 
-    .overlay-content button:hover {
-      background: #5568d3;
-      transform: scale(1.05);
-    }
-
-    .stats-section {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
+    .stats-section { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .stat-card {
-      background: white;
-      border-radius: 1.5rem;
-      padding: 2rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      background: white; border-radius: 1.5rem;
+      padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
+    .stat-card h3 { color: #334155; margin-bottom: 1rem; font-size: 1rem; }
 
-    .progress-bar {
-      margin: 1.5rem 0;
-    }
+    .progress-bar { margin: 1rem 0; }
+    .progress-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #64748b; font-size: 0.875rem; }
+    .progress-track { height: 10px; background: #E5E7EB; border-radius: 1rem; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 1rem; transition: width 0.5s ease; }
 
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-      color: #64748b;
-      font-size: 0.875rem;
-    }
+    .exercise-title { font-size: 1.25rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; }
+    .exercise-desc { color: #64748b; font-size: 0.875rem; line-height: 1.5; }
 
-    .progress-track {
-      height: 12px;
-      background: #E5E7EB;
-      border-radius: 1rem;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      border-radius: 1rem;
-      transition: width 0.5s ease;
-    }
-
-    .exercise-info {
-      margin-top: 1.5rem;
-    }
-
-    .exercise-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 0.5rem;
-    }
-
-    .exercise-desc {
-      color: #64748b;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-
-    .timer {
-      text-align: center;
-      margin: 2rem 0;
-    }
-
-    .timer-value {
-      font-size: 4rem;
-      font-weight: 700;
-      color: #667eea;
-      line-height: 1;
-    }
-
-    .timer-label {
-      color: #64748b;
-      font-size: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
+    .timer { text-align: center; margin: 1rem 0; }
+    .timer-value { font-size: 3.5rem; font-weight: 700; color: #667eea; line-height: 1; }
+    .timer-label { color: #64748b; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; }
 
     .accuracy-display {
       background: linear-gradient(135deg, #F0F4FF, #E8EEFF);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      margin-top: 1.5rem;
+      border-radius: 1rem; padding: 1.25rem; text-align: center; margin-bottom: 0.75rem;
     }
-
-    .accuracy-value {
-      font-size: 3rem;
-      font-weight: 700;
-      color: #667eea;
-      text-align: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .accuracy-status {
-      text-align: center;
-      font-weight: 600;
-      font-size: 1.125rem;
-    }
-
+    .accuracy-value { font-size: 2.5rem; font-weight: 700; color: #667eea; }
+    .accuracy-status { font-weight: 600; font-size: 1rem; margin-top: 0.25rem; }
     .status-excellent { color: #10B981; }
     .status-good { color: #2196F3; }
     .status-warning { color: #F59E0B; }
     .status-danger { color: #EF4444; }
 
-    .feedback-box {
-      background: #FFF9E6;
-      border-left: 4px solid #F59E0B;
-      padding: 1rem;
-      border-radius: 0.5rem;
-      margin-top: 1rem;
-    }
+    .feedback-box { padding: 0.875rem; border-radius: 0.5rem; }
+    .feedback-text { font-size: 0.875rem; line-height: 1.5; }
 
-    .feedback-text {
-      color: #92400E;
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    .controls {
-      display: flex;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 1rem;
-      border: none;
-      border-radius: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 1rem;
-      font-family: 'Prompt', sans-serif;
-    }
-
-    .btn-primary {
-      background: #667eea;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #5568d3;
-      transform: translateY(-2px);
-    }
-
-    .btn-secondary {
-      background: #E5E7EB;
-      color: #334155;
-    }
-
-    .btn-secondary:hover {
-      background: #D1D5DB;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 2rem;
-      color: white;
-    }
-
-    .loading-spinner {
-      width: 60px;
-      height: 60px;
-      border: 6px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .exercise-list {
-      list-style: none;
-      padding: 0;
-    }
-
+    .exercise-list { list-style: none; }
     .exercise-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      margin-bottom: 0.5rem;
-      transition: background 0.2s;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.6rem 0.75rem; border-radius: 0.5rem; margin-bottom: 0.25rem; font-size: 0.875rem;
     }
-
-    .exercise-item:hover {
-      background: #F8FAFC;
-    }
-
-    .exercise-item.completed {
-      background: #DCFCE7;
-    }
-
-    .exercise-item.current {
-      background: #E8EEFF;
-      border-left: 4px solid #667eea;
-    }
-
-    .exercise-name {
-      font-weight: 600;
-      color: #334155;
-    }
-
-    .exercise-score {
-      font-weight: 700;
-    }
-
+    .exercise-item.completed { background: #DCFCE7; }
+    .exercise-item.current { background: #E8EEFF; border-left: 3px solid #667eea; }
+    .exercise-name { font-weight: 600; color: #334155; }
+    .exercise-score { font-weight: 700; }
     .score-excellent { color: #10B981; }
     .score-good { color: #2196F3; }
     .score-warning { color: #F59E0B; }
     .score-pending { color: #94A3B8; }
 
-    /* Exercise Preview Overlay */
-    .exercise-preview-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.95);
-      z-index: 9999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      animation: fadeIn 0.3s ease;
+    .controls { display: flex; gap: 0.75rem; margin-top: 1rem; }
+    .btn { flex: 1; padding: 0.875rem; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; font-family: 'Prompt', sans-serif; transition: all 0.3s; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover { background: #5568d3; }
+    .btn-secondary { background: #E5E7EB; color: #334155; }
+    .btn-secondary:hover { background: #D1D5DB; }
+
+    .community-section { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .live-players-card, .leaderboard-card, .feed-card {
+      background: white; border-radius: 1.5rem;
+      padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+    .leaderboard-card { flex: 1; }
 
-    .preview-content {
-      background: white;
-      border-radius: 2rem;
-      max-width: 800px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
-      animation: slideUp 0.4s ease;
-    }
+    .live-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .live-title { font-weight: 700; color: #334155; font-size: 1rem; }
+    .live-count { background: #EF4444; color: white; padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700; }
 
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(50px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    .live-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; }
 
-    .preview-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 2rem 2rem 0 0;
-      text-align: center;
-      position: relative;
-    }
-
-    .preview-number {
-      display: inline-block;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 0.5rem 1.5rem;
-      border-radius: 2rem;
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
-    .preview-title {
-      font-size: 2.5rem;
-      font-weight: 900;
-      margin-bottom: 0.5rem;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .preview-subtitle {
-      font-size: 1.5rem;
-      opacity: 0.95;
-      font-weight: 600;
-    }
-
-    .preview-body {
-      padding: 2rem;
-    }
-
-    .preview-image-container {
-      width: 100%;
-      aspect-ratio: 4/3;
-      background: #F8FAFC;
-      border-radius: 1.5rem;
-      overflow: hidden;
-      margin-bottom: 2rem;
-      border: 3px solid #E5E7EB;
-      position: relative;
-    }
-
-    .preview-image {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background: white;
-      transition: opacity 0.3s;
-    }
-
-    .image-loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 3rem;
-      animation: spin 2s linear infinite;
-    }
-
-    .preview-description {
-      background: #F8FAFC;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      border-left: 4px solid #667eea;
-    }
-
-    .preview-desc-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .preview-desc-text {
-      font-size: 1.125rem;
-      color: #64748b;
-      line-height: 1.8;
-    }
-
-    .preview-tips {
-      background: #FFF9E6;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      border-left: 4px solid #F59E0B;
-      margin-bottom: 1.5rem;
-    }
-
-    .preview-tips-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #92400E;
-      margin-bottom: 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .preview-tips-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .preview-tips-list li {
-      color: #92400E;
-      padding: 0.5rem 0;
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      line-height: 1.6;
-    }
-
-    .preview-tips-list li::before {
-      content: '💡';
-      flex-shrink: 0;
-    }
-
-    .preview-countdown {
-      text-align: center;
-      padding: 2rem;
-      background: linear-gradient(135deg, #F0F4FF, #E8EEFF);
-      border-radius: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .countdown-label {
-      font-size: 1rem;
-      color: #64748b;
-      margin-bottom: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .countdown-value {
-      font-size: 5rem;
-      font-weight: 900;
-      color: #667eea;
-      line-height: 1;
-      animation: pulse 1s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.1);
-      }
-    }
-
-    .preview-actions {
-      display: flex;
-      gap: 1rem;
-      padding: 0 2rem 2rem;
-    }
-
-    .preview-btn {
-      flex: 1;
-      padding: 1.25rem;
-      border: none;
-      border-radius: 1rem;
-      font-weight: 700;
-      font-size: 1.125rem;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-family: 'Prompt', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .btn-skip-preview {
-      background: #E5E7EB;
-      color: #334155;
-    }
-
-    .btn-skip-preview:hover {
-      background: #D1D5DB;
-      transform: translateY(-2px);
-    }
-
-    .btn-start-exercise {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn-start-exercise::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    .btn-start-exercise:hover::before {
-      width: 400px;
-      height: 400px;
-    }
-
-    .btn-start-exercise span {
-      position: relative;
-      z-index: 1;
-    }
-
-    .btn-start-exercise:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
-    }
-
-    /* Tutorial Modal */
-    .tutorial-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.95);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-    }
-
-    .tutorial-content {
-      background: white;
-      border-radius: 2rem;
-      max-width: 900px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
-    }
-
-    .tutorial-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 2rem 2rem 0 0;
-      text-align: center;
-    }
-
-    .tutorial-header h2 {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .tutorial-header p {
-      opacity: 0.9;
-      font-size: 1.125rem;
-    }
-
-    .tutorial-body {
-      padding: 2rem;
-    }
-
-    .exercise-carousel {
-      position: relative;
-      margin-bottom: 2rem;
-    }
-
-    .carousel-item {
-      display: none;
-      animation: fadeIn 0.5s ease;
-    }
-
-    .carousel-item.active {
-      display: block;
-    }
-
-    .exercise-card {
-      background: #F8FAFC;
-      border-radius: 1.5rem;
-      overflow: hidden;
-      border: 3px solid #E5E7EB;
-    }
-
-    .exercise-image {
-      width: 100%;
-      height: 400px;
-      background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .exercise-image::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(circle at center, transparent 0%, rgba(102, 126, 234, 0.1) 100%);
-    }
-
-    .exercise-emoji {
-      position: relative;
-      z-index: 1;
-      animation: float 3s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-    }
-
-    .exercise-details {
-      padding: 2rem;
-    }
-
-    .exercise-number {
-      display: inline-block;
-      background: #667eea;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      font-weight: 700;
-      font-size: 0.875rem;
-      margin-bottom: 1rem;
-    }
-
-    .exercise-card-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 0.5rem;
-    }
-
-    .exercise-card-subtitle {
-      font-size: 1.25rem;
-      color: #667eea;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-    }
-
-    .exercise-card-description {
-      font-size: 1.125rem;
-      color: #64748b;
-      line-height: 1.8;
-      margin-bottom: 1.5rem;
-    }
-
-    .exercise-benefits {
-      background: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      border: 2px solid #E5E7EB;
-    }
-
-    .benefits-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .benefits-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .benefits-list li {
-      padding: 0.5rem 0;
-      color: #64748b;
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      line-height: 1.6;
-    }
-
-    .benefits-list li::before {
-      content: '✓';
-      color: #10B981;
-      font-weight: 700;
-      font-size: 1.25rem;
-      flex-shrink: 0;
-    }
-
-    .carousel-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 2rem;
-    }
-
-    .carousel-btn {
-      background: #667eea;
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
+    /* Live player with cartoon avatar */
+    .live-player {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.6rem 0.75rem; background: #F8FAFC;
       border-radius: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 1.125rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-family: 'Prompt', sans-serif;
     }
 
-    .carousel-btn:hover:not(:disabled) {
-      background: #5568d3;
-      transform: translateY(-2px);
+    .live-avatar-wrap {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #E8EEFF; border: 2px solid #C7D2FE;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
     }
 
-    .carousel-btn:disabled {
-      background: #E5E7EB;
-      color: #94A3B8;
-      cursor: not-allowed;
-      transform: none;
-    }
+    .live-avatar-wrap svg { width: 26px; height: 26px; }
 
-    .carousel-indicators {
-      display: flex;
-      gap: 0.5rem;
-    }
+    .live-player-info { flex: 1; min-width: 0; }
+    .live-player-name { font-weight: 600; color: #334155; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .live-player-status { font-size: 0.75rem; color: #64748b; }
+    .live-player-score { font-weight: 700; color: #667eea; font-size: 0.875rem; white-space: nowrap; }
+    .live-pulse { width: 8px; height: 8px; background: #22C55E; border-radius: 50%; flex-shrink: 0; animation: blink 1.5s ease-in-out infinite; }
 
-    .indicator-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #E5E7EB;
-      transition: all 0.3s;
-      cursor: pointer;
-    }
+    .lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .lb-title { font-weight: 700; color: #334155; font-size: 1rem; }
+    .lb-tabs { display: flex; gap: 0.25rem; background: #F1F5F9; padding: 0.25rem; border-radius: 0.75rem; }
+    .lb-tab { padding: 0.375rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #64748b; transition: all 0.2s; border: none; background: transparent; font-family: 'Prompt', sans-serif; }
+    .lb-tab.active { background: white; color: #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
-    .indicator-dot.active {
-      background: #667eea;
-      width: 32px;
-      border-radius: 6px;
-    }
+    .lb-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; }
 
-    .tutorial-footer {
-      padding: 2rem;
-      border-top: 2px solid #E5E7EB;
-      display: flex;
-      gap: 1rem;
-      justify-content: space-between;
-    }
+    .lb-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; transition: background 0.2s; }
+    .lb-item:hover { background: #F8FAFC; }
+    .lb-item.is-me { background: #E8EEFF; border: 2px solid #667eea; }
 
-    .tutorial-footer .btn {
-      flex: 1;
-    }
+    .lb-rank { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 0.875rem; flex-shrink: 0; }
+    .rank-1 { background: #FFD700; color: #92400E; }
+    .rank-2 { background: #C0C0C0; color: #374151; }
+    .rank-3 { background: #CD7F32; color: white; }
+    .rank-other { background: #F1F5F9; color: #64748b; }
 
-    .btn-skip {
-      background: #E5E7EB;
-      color: #334155;
+    /* LB avatar */
+    .lb-avatar-wrap {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #F1F5F9; border: 2px solid #E5E7EB;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
     }
+    .lb-avatar-wrap svg { width: 28px; height: 28px; }
 
-    .btn-skip:hover {
-      background: #D1D5DB;
-    }
+    .lb-info { flex: 1; min-width: 0; }
+    .lb-name { font-weight: 600; color: #334155; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lb-meta { font-size: 0.75rem; color: #94A3B8; }
+    .lb-score-col { text-align: right; flex-shrink: 0; }
+    .lb-score { font-weight: 700; color: #334155; font-size: 0.875rem; }
+    .lb-accuracy { font-size: 0.75rem; color: #667eea; }
 
-    .btn-start {
+    .you-badge { font-size: 0.65rem; background: #667eea; color: white; padding: 0.1rem 0.4rem; border-radius: 2rem; font-weight: 700; }
+
+    .my-rank-banner {
       background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      position: relative;
+      color: white; border-radius: 1rem; padding: 1rem 1.25rem;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+    }
+    .my-rank-left { display: flex; align-items: center; gap: 0.75rem; }
+
+    .banner-avatar-wrap {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.5);
+      display: flex; align-items: center; justify-content: center;
       overflow: hidden;
     }
+    .banner-avatar-wrap svg { width: 36px; height: 36px; }
 
-    .btn-start::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
+    .my-rank-number { font-size: 1.5rem; font-weight: 900; }
+    .my-rank-points { font-size: 1.25rem; font-weight: 700; }
+
+    .feed-card { }
+    .feed-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 180px; overflow-y: auto; }
+    .feed-item { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.625rem; background: #F8FAFC; border-radius: 0.75rem; }
+    .feed-icon { font-size: 1.125rem; flex-shrink: 0; }
+    .feed-text { font-size: 0.8rem; color: #475569; line-height: 1.5; }
+    .feed-time { font-size: 0.7rem; color: #94A3B8; margin-top: 0.2rem; }
+
+    .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 99998; display: flex; flex-direction: column; gap: 0.75rem; max-width: 320px; }
+    .toast { background: white; border-radius: 1rem; padding: 1rem 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0.75rem; animation: toastIn 0.4s ease; border-left: 4px solid #667eea; }
+    @keyframes toastIn { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes toastOut { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(50px)} }
+    .toast-icon { font-size: 1.5rem; }
+    .toast-body { flex: 1; }
+    .toast-title { font-weight: 700; color: #334155; font-size: 0.875rem; }
+    .toast-msg { color: #64748b; font-size: 0.8rem; margin-top: 0.1rem; }
+
+    .loading-spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    .exercise-preview-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:none; align-items:center; justify-content:center; padding:2rem; }
+    .preview-content { background:white; border-radius:2rem; max-width:700px; width:100%; max-height:90vh; overflow-y:auto; }
+    .preview-header { background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:1.75rem; border-radius:2rem 2rem 0 0; text-align:center; }
+    .preview-number { display:inline-block; background:rgba(255,255,255,0.2); padding:0.4rem 1.25rem; border-radius:2rem; font-size:0.9rem; font-weight:600; margin-bottom:0.75rem; }
+    .preview-title { font-size:2rem; font-weight:900; margin-bottom:0.25rem; }
+    .preview-subtitle { font-size:1.25rem; opacity:0.95; }
+    .preview-body { padding:1.5rem; }
+    .preview-image-container { width:100%; aspect-ratio:16/9; background:#F8FAFC; border-radius:1rem; overflow:hidden; margin-bottom:1.25rem; border:2px solid #E5E7EB; position:relative; }
+    .preview-image { width:100%; height:100%; object-fit:contain; background:white; transition:opacity 0.3s; }
+    .image-loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2rem; animation:spin 2s linear infinite; }
+    .preview-description { background:#F8FAFC; border-radius:0.75rem; padding:1.25rem; margin-bottom:1rem; border-left:4px solid #667eea; }
+    .preview-desc-title { font-size:0.875rem; font-weight:700; color:#334155; margin-bottom:0.5rem; }
+    .preview-desc-text { font-size:1rem; color:#64748b; line-height:1.7; }
+    .preview-countdown { text-align:center; padding:1.5rem; background:linear-gradient(135deg,#F0F4FF,#E8EEFF); border-radius:1rem; margin-bottom:1rem; }
+    .countdown-label { font-size:0.875rem; color:#64748b; margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:1px; }
+    .countdown-value { font-size:4rem; font-weight:900; color:#667eea; line-height:1; animation:pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+    .preview-actions { display:flex; gap:1rem; padding:0 1.5rem 1.5rem; }
+    .preview-btn { flex:1; padding:1rem; border:none; border-radius:0.875rem; font-weight:700; font-size:1rem; cursor:pointer; font-family:'Prompt',sans-serif; transition:all 0.3s; }
+    .btn-skip-preview { background:#E5E7EB; color:#334155; }
+    .btn-start-exercise { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
+    .btn-start-exercise:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(102,126,234,0.4); }
+
+    .tutorial-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; display:flex; align-items:center; justify-content:center; padding:2rem; }
+    .tutorial-content { background:white; border-radius:2rem; max-width:800px; width:100%; max-height:90vh; overflow-y:auto; }
+    .tutorial-header { background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:1.75rem; border-radius:2rem 2rem 0 0; text-align:center; }
+    .tutorial-header h2 { font-size:1.75rem; font-weight:700; }
+    .tutorial-body { padding:1.5rem; }
+    .carousel-item { display:none; }
+    .carousel-item.active { display:block; }
+    .exercise-card { background:#F8FAFC; border-radius:1.25rem; overflow:hidden; border:2px solid #E5E7EB; }
+    .exercise-image { width:100%; height:220px; background:linear-gradient(135deg,#667eea20,#764ba220); display:flex; align-items:center; justify-content:center; }
+    .exercise-emoji { font-size:5rem; animation:float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
+    .exercise-details { padding:1.5rem; }
+    .exercise-number { display:inline-block; background:#667eea; color:white; padding:0.4rem 0.875rem; border-radius:2rem; font-weight:700; font-size:0.8rem; margin-bottom:0.75rem; }
+    .exercise-card-title { font-size:1.5rem; font-weight:700; color:#334155; }
+    .exercise-card-subtitle { font-size:1rem; color:#667eea; font-weight:600; margin-bottom:1rem; }
+    .exercise-card-description { color:#64748b; line-height:1.7; margin-bottom:1rem; }
+    .exercise-benefits { background:white; border-radius:0.75rem; padding:1.25rem; border:2px solid #E5E7EB; }
+    .benefits-title { font-weight:700; color:#334155; margin-bottom:0.75rem; font-size:0.9rem; }
+    .benefits-list { list-style:none; }
+    .benefits-list li { padding:0.4rem 0; color:#64748b; display:flex; gap:0.5rem; font-size:0.9rem; }
+    .benefits-list li::before { content:'✓'; color:#10B981; font-weight:700; }
+    .carousel-controls { display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; }
+    .carousel-btn { background:#667eea; color:white; border:none; padding:0.875rem 1.5rem; border-radius:0.75rem; font-weight:600; cursor:pointer; font-family:'Prompt',sans-serif; transition:all 0.3s; }
+    .carousel-btn:hover:not(:disabled) { background:#5568d3; }
+    .carousel-btn:disabled { background:#E5E7EB; color:#94A3B8; cursor:not-allowed; }
+    .carousel-indicators { display:flex; gap:0.4rem; }
+    .indicator-dot { width:10px; height:10px; border-radius:50%; background:#E5E7EB; cursor:pointer; transition:all 0.3s; }
+    .indicator-dot.active { background:#667eea; width:28px; border-radius:5px; }
+    .tutorial-footer { padding:1.5rem; border-top:2px solid #E5E7EB; display:flex; gap:1rem; }
+    .btn-skip { background:#E5E7EB; color:#334155; }
+    .btn-start { background:linear-gradient(135deg,#667eea,#764ba2); color:white; }
+
+    .lb-list::-webkit-scrollbar,
+    .live-list::-webkit-scrollbar,
+    .feed-list::-webkit-scrollbar { width:4px; }
+    .lb-list::-webkit-scrollbar-track,
+    .live-list::-webkit-scrollbar-track,
+    .feed-list::-webkit-scrollbar-track { background:#F1F5F9; }
+    .lb-list::-webkit-scrollbar-thumb,
+    .live-list::-webkit-scrollbar-thumb,
+    .feed-list::-webkit-scrollbar-thumb { background:#667eea; border-radius:2px; }
+
+    @media (max-width:1200px) {
+      .game-layout { grid-template-columns:1.5fr 1fr; }
+      .community-section { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
     }
-
-    .btn-start:hover::before {
-      width: 300px;
-      height: 300px;
-    }
-
-    .btn-start span {
-      position: relative;
-      z-index: 1;
-    }
-
-    @media (max-width: 1024px) {
-      .game-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .tutorial-content,
-      .preview-content {
-        max-height: 95vh;
-      }
-
-      .exercise-image {
-        height: 250px;
-        font-size: 6rem;
-      }
-
-      .exercise-card-title,
-      .preview-title {
-        font-size: 1.5rem;
-      }
-
-      .preview-subtitle {
-        font-size: 1.25rem;
-      }
-
-      .carousel-btn {
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-      }
-
-      .tutorial-header h2 {
-        font-size: 1.5rem;
-      }
-
-      .countdown-value {
-        font-size: 4rem;
-      }
-
-      .preview-actions {
-        flex-direction: column;
-      }
-
-      .preview-body {
-        padding: 1.5rem;
-      }
+    @media (max-width:768px) {
+      .game-layout { grid-template-columns:1fr; }
+      .community-section { grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Exercise Preview Overlay -->
-  <div class="exercise-preview-overlay" id="exercisePreview">
-    <div class="preview-content">
-      <div class="preview-header">
-        <div class="preview-number" id="previewNumber">ท่าที่ 1/8</div>
-        <h2 class="preview-title" id="previewTitle">Neck Stretch</h2>
-        <p class="preview-subtitle" id="previewSubtitle">ยืดกล้ามเนื้อคอ</p>
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🏋️</div>
+    <h1 class="login-title">Office Syndrome Game</h1>
+    <p class="login-subtitle">แข่งขันกับผู้เล่นทั่วโลก!</p>
+
+    <div class="online-badge">
+      <div class="online-dot"></div>
+      <span id="onlineCountBadge">กำลังโหลด...</span>
+    </div>
+
+    <div class="input-group">
+      <label>👤 ชื่อผู้เล่น</label>
+      <input type="text" id="usernameInput" placeholder="ใส่ชื่อของคุณ..." maxlength="20">
+    </div>
+
+    <div class="input-group">
+      <label>🏢 แผนก / ทีม (ไม่บังคับ)</label>
+      <input type="text" id="departmentInput" placeholder="เช่น HR, Engineering, Sales..." maxlength="30">
+    </div>
+
+    <div class="input-group">
+      <div class="avatar-section-label">🎨 เลือกตัวละคร</div>
+      <div class="avatar-grid" id="avatarGrid"></div>
+    </div>
+
+    <!-- Selected Preview -->
+    <div class="selected-avatar-display" id="selectedAvatarDisplay">
+      <div class="selected-avatar-preview" id="selectedAvatarPreview"></div>
+      <div class="selected-avatar-info">
+        <div class="selected-avatar-name" id="selectedAvatarName">เลือกตัวละครของคุณ</div>
+        <div class="selected-avatar-desc" id="selectedAvatarDesc">คลิกที่ตัวละครด้านบน</div>
       </div>
+    </div>
 
-      <div class="preview-body">
-        <!-- Exercise Image -->
-        <div class="preview-image-container">
-          <img 
-            id="previewImage" 
-            class="preview-image" 
-            src="" 
-            alt="Exercise Demo"
-            style="opacity: 0;">
-          <div class="image-loading" id="imageLoading">⏳</div>
-        </div>
+    <button class="btn-login" onclick="handleLogin()">🎮 เข้าร่วมการแข่งขัน!</button>
+  </div>
+</div>
 
-        <!-- Description -->
-        <div class="preview-description">
-          <div class="preview-desc-title">
-            <span>📋</span> วิธีการทำ
-          </div>
-          <div class="preview-desc-text" id="previewDescription">
-            เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ รู้สึกถึงการยืดที่คอ
-          </div>
-        </div>
-
-        <!-- Tips -->
-        <div class="preview-tips">
-          <div class="preview-tips-title">
-            <span>💡</span> เคลับลับ
-          </div>
-          <ul class="preview-tips-list" id="previewTips">
-            <li>อย่ากดหัวแรงเกินไป ใช้แรงเบาๆ</li>
-            <li>หายใจเข้าลึกๆ ช่วยให้กล้ามเนื้อผ่อนคลาย</li>
-            <li>ค้างแต่ละข้าง 15-20 วินาที</li>
-          </ul>
-        </div>
-
-        <!-- Countdown -->
-        <div class="preview-countdown" id="previewCountdown" style="display: none;">
-          <div class="countdown-label">เริ่มใน</div>
-          <div class="countdown-value" id="previewCountdownValue">3</div>
-        </div>
+<!-- ===== EXERCISE PREVIEW ===== -->
+<div class="exercise-preview-overlay" id="exercisePreview">
+  <div class="preview-content">
+    <div class="preview-header">
+      <div class="preview-number" id="previewNumber">ท่าที่ 1/8</div>
+      <h2 class="preview-title" id="previewTitle">Neck Stretch</h2>
+      <p class="preview-subtitle" id="previewSubtitle">ยืดกล้ามเนื้อคอ</p>
+    </div>
+    <div class="preview-body">
+      <div class="preview-image-container">
+        <img id="previewImage" class="preview-image" src="" alt="" style="opacity:0;">
+        <div class="image-loading" id="imageLoading">⏳</div>
       </div>
-
-      <!-- Actions -->
-      <div class="preview-actions">
-        <button class="preview-btn btn-skip-preview" onclick="skipPreview()">
-          ⏭️ ข้าม
-        </button>
-        <button class="preview-btn btn-start-exercise" onclick="startExerciseFromPreview()">
-          <span>🏋️ เริ่มท่านี้!</span>
-        </button>
+      <div class="preview-description">
+        <div class="preview-desc-title">📋 วิธีการทำ</div>
+        <div class="preview-desc-text" id="previewDescription"></div>
       </div>
+      <div class="preview-countdown" id="previewCountdown" style="display:none;">
+        <div class="countdown-label">เริ่มใน</div>
+        <div class="countdown-value" id="previewCountdownValue">3</div>
+      </div>
+    </div>
+    <div class="preview-actions">
+      <button class="preview-btn btn-skip-preview" onclick="skipPreview()">⏭️ ข้าม</button>
+      <button class="preview-btn btn-start-exercise" onclick="startExerciseFromPreview()">🏋️ เริ่มท่านี้!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TUTORIAL ===== -->
+<div class="tutorial-modal" id="tutorialModal" style="display:none;">
+  <div class="tutorial-content">
+    <div class="tutorial-header">
+      <h2>🏋️ รู้จักกับ 8 ท่ายืดเหยียด</h2>
+      <p>เรียนรู้ท่าออกกำลังกายก่อนเริ่มเกม</p>
+    </div>
+    <div class="tutorial-body">
+      <div id="exerciseCarousel"></div>
+      <div class="carousel-controls">
+        <button class="carousel-btn" id="prevBtn" onclick="changeSlide(-1)">← ก่อนหน้า</button>
+        <div class="carousel-indicators" id="indicators"></div>
+        <button class="carousel-btn" id="nextBtn" onclick="changeSlide(1)">ถัดไป →</button>
+      </div>
+    </div>
+    <div class="tutorial-footer">
+      <button class="btn btn-skip" onclick="skipTutorial()">ข้ามการสอน</button>
+      <button class="btn btn-start" onclick="completeTutorial()">🎮 เริ่มเล่นเลย!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== MAIN GAME ===== -->
+<div class="game-container">
+  <div class="header">
+    <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
+    <div class="header-center">
+      <div class="header-avatar-wrap" id="headerAvatarWrap"></div>
+      <div>
+        <div class="header-username" id="headerUsername">ผู้เล่น</div>
+        <div style="font-size:0.75rem;opacity:0.85;" id="headerDept">—</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="stat-pill">🔥 Streak: <span id="streak">0</span></div>
+      <div class="stat-pill">💎 <span id="totalPoints">0</span> pts</div>
+      <div class="stat-pill">🏆 อันดับ <span id="myRankPill">#—</span></div>
     </div>
   </div>
 
-  <!-- Tutorial Modal -->
-  <div class="tutorial-modal" id="tutorialModal">
-    <div class="tutorial-content">
-      <div class="tutorial-header">
-        <h2>🏋️ รู้จักกับ 8 ท่ายืดเหยียด</h2>
-        <p>เรียนรู้ท่าออกกำลังกายก่อนเริ่มเกม</p>
-      </div>
-
-      <div class="tutorial-body">
-        <div class="exercise-carousel">
-          <!-- Exercise 1 -->
-          <div class="carousel-item active">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🧘</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 1/8</span>
-                <h3 class="exercise-card-title">Neck Stretch</h3>
-                <p class="exercise-card-subtitle">ยืดกล้ามเนื้อคอ</p>
-                <p class="exercise-card-description">
-                  เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ รู้สึกถึงการยืดที่ด้านข้างของคอ 
-                  ค้างไว้ 15-20 วินาที แล้วสลับข้าง
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ลดอาการปวดเมื่อยบริเวณคอและไหล่</li>
-                    <li>ป้องกัน Stiff Neck จากการนั่งทำงานนาน</li>
-                    <li>เพิ่มความยืดหยุ่นของกล้ามเนื้อคอ</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 2 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">💪</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 2/8</span>
-                <h3 class="exercise-card-title">Shoulder Roll</h3>
-                <p class="exercise-card-subtitle">หมุนไหล่</p>
-                <p class="exercise-card-description">
-                  หมุนไหล่ทั้งสองข้างไปข้างหน้า 10 ครั้ง แล้วหมุนข้างหลัง 10 ครั้ง 
-                  เคลื่อนไหวอย่างช้าๆ และควบคุม
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ลดความตึงเครียดบริเวณไหล่และหลังส่วนบน</li>
-                    <li>ปรับปรุงการไหลเวียนของเลือด</li>
-                    <li>ป้องกันอาการปวดหลังจากท่าทางที่ไม่ถูกต้อง</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 3 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🙆</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 3/8</span>
-                <h3 class="exercise-card-title">Back Stretch</h3>
-                <p class="exercise-card-subtitle">ยืดกล้ามเนื้อหลัง</p>
-                <p class="exercise-card-description">
-                  นั่งตรง ประสานมือเข้าหากัน แล้วเหยียดแขนไปข้างหน้า 
-                  โค้งหลังเล็กน้อย รู้สึกถึงการยืดที่หลัง
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ยืดกล้ามเนื้อหลังส่วนบนและกลาง</li>
-                    <li>ลดความเมื่อยล้าจากการนั่งนาน</li>
-                    <li>ปรับปรุงท่าทางการนั่ง</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 4 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🤸</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 4/8</span>
-                <h3 class="exercise-card-title">Side Bend</h3>
-                <p class="exercise-card-subtitle">โน้มตัวข้าง</p>
-                <p class="exercise-card-description">
-                  ยืนตรง ยกมือข้างหนึ่งขึ้นเหนือศีรษะ โน้มตัวไปอีกข้าง 
-                  รู้สึกถึงการยืดที่ด้านข้างของลำตัว สลับซ้าย-ขวา
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ยืดกล้ามเนื้อด้านข้างของลำตัว</li>
-                    <li>เพิ่มความยืดหยุ่นของกระดูกสันหลัง</li>
-                    <li>ช่วยในการหายใจได้ดีขึ้น</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 5 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🦸</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 5/8</span>
-                <h3 class="exercise-card-title">Chest Opener</h3>
-                <p class="exercise-card-subtitle">เปิดอก</p>
-                <p class="exercise-card-description">
-                  ประสานมือไว้ด้านหลังหัว ดันอกไปข้างหน้า เหยียดหลังให้ตรง 
-                  รู้สึกถึงการยืดที่อกและไหล่
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>เปิดกล้ามเนื้ออกและไหล่</li>
-                    <li>แก้ไขท่าทางที่โน้มไปข้างหน้า</li>
-                    <li>ปรับปรุงการหายใจ</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 6 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🦵</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 6/8</span>
-                <h3 class="exercise-card-title">Hip Flexor</h3>
-                <p class="exercise-card-subtitle">ยืดกล้ามเนื้อสะโพก</p>
-                <p class="exercise-card-description">
-                  ย่อเข่าครึ่งทาง (Lunge Position) เอนตัวไปข้างหลังเล็กน้อย 
-                  รู้สึกถึงการยืดที่ด้านหน้าของขา สลับข้าง
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ยืดกล้ามเนื้อด้านหน้าของสะโพก</li>
-                    <li>ลดปวดหลังจากการนั่งนาน</li>
-                    <li>ปรับปรุงท่าทางและการทรงตัว</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 7 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🏃</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 7/8</span>
-                <h3 class="exercise-card-title">Quad Stretch</h3>
-                <p class="exercise-card-subtitle">ยืดกล้ามเนื้อต้นขา</p>
-                <p class="exercise-card-description">
-                  ยืนขาเดียว จับเท้าอีกข้างไว้ด้านหลัง ดึงเข้าหาก้น 
-                  รู้สึกถึงการยืดที่ด้านหน้าของต้นขา สลับข้าง
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ยืดกล้ามเนื้อด้านหน้าของขา (Quadriceps)</li>
-                    <li>ปรับปรุงความยืดหยุ่นของขา</li>
-                    <li>ช่วยในการทรงตัวและประสานสัมพันธ์</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Exercise 8 -->
-          <div class="carousel-item">
-            <div class="exercise-card">
-              <div class="exercise-image">
-                <div class="exercise-emoji">🚶</div>
-              </div>
-              <div class="exercise-details">
-                <span class="exercise-number">ท่าที่ 8/8</span>
-                <h3 class="exercise-card-title">Calf Stretch</h3>
-                <p class="exercise-card-subtitle">ยืดกล้ามเนื้อน่อง</p>
-                <p class="exercise-card-description">
-                  ก้าวเท้าข้างหนึ่งไปข้างหน้า เหยียดเข่าหลัง ให้ส้นเท้าติดพื้น 
-                  รู้สึกถึงการยืดที่น่อง สลับข้าง
-                </p>
-                <div class="exercise-benefits">
-                  <div class="benefits-title">
-                    <span>💡</span> ประโยชน์
-                  </div>
-                  <ul class="benefits-list">
-                    <li>ยืดกล้ามเนื้อน่องและเอ็นร้อยหวาย</li>
-                    <li>ป้องกันการปวดน่องและตะคริว</li>
-                    <li>ปรับปรุงการไหลเวียนในขา</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="carousel-controls">
-          <button class="carousel-btn" id="prevBtn" onclick="changeSlide(-1)">
-            ← ก่อนหน้า
-          </button>
-          
-          <div class="carousel-indicators" id="indicators">
-            <div class="indicator-dot active" onclick="goToSlide(0)"></div>
-            <div class="indicator-dot" onclick="goToSlide(1)"></div>
-            <div class="indicator-dot" onclick="goToSlide(2)"></div>
-            <div class="indicator-dot" onclick="goToSlide(3)"></div>
-            <div class="indicator-dot" onclick="goToSlide(4)"></div>
-            <div class="indicator-dot" onclick="goToSlide(5)"></div>
-            <div class="indicator-dot" onclick="goToSlide(6)"></div>
-            <div class="indicator-dot" onclick="goToSlide(7)"></div>
-          </div>
-
-          <button class="carousel-btn" id="nextBtn" onclick="changeSlide(1)">
-            ถัดไป →
-          </button>
-        </div>
-      </div>
-
-      <div class="tutorial-footer">
-        <button class="btn btn-skip" onclick="skipTutorial()">
-          ข้ามการสอน
-        </button>
-        <button class="btn btn-start" onclick="completeTutorial()">
-          <span>🎮 เริ่มเล่นเลย!</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Game Container -->
-  <div class="game-container">
-    <div class="header">
-      <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
-      <div class="header-right">
-        <div style="color: white; font-weight: 600;">
-          <span>🔥 Streak: <span id="streak">0</span> วัน</span>
-        </div>
-        <div style="color: white; font-weight: 600;">
-          <span>💎 Points: <span id="totalPoints">0</span></span>
-        </div>
-      </div>
-    </div>
-
-    <div class="game-layout">
-      <!-- Left: Video Section -->
-      <div class="video-section">
-        <div id="webcam-container">
-          <video id="webcam" autoplay playsinline></video>
-          <canvas id="canvas"></canvas>
-          
-          <div class="camera-overlay" id="cameraOverlay">
-            <div class="overlay-content">
-              <div style="font-size: 3rem; margin-bottom: 1rem;">📸</div>
-              <div>กรุณาอนุญาตการใช้กล้อง</div>
-              <button onclick="startCamera()">🎥 เริ่มใช้กล้อง</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <button class="btn btn-secondary" onclick="pauseGame()" id="pauseBtn">
-            ⏸️ หยุดชั่วคราว
-          </button>
-          <button class="btn btn-primary" onclick="skipExercise()">
-            ⏭️ ข้ามท่านี้
-          </button>
-        </div>
-      </div>
-
-      <!-- Right: Stats Section -->
-      <div class="stats-section">
-        <!-- Progress Card -->
-        <div class="stat-card">
-          <h3 style="color: #334155; margin-bottom: 1rem;">📊 ความคืบหน้า</h3>
-          <div class="progress-bar">
-            <div class="progress-label">
-              <span>ท่าที่ทำแล้ว</span>
-              <span><span id="currentExercise">0</span>/8</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-            </div>
-          </div>
-
-          <div class="exercise-info">
-            <div class="exercise-title" id="exerciseTitle">เตรียมตัว...</div>
-            <div class="exercise-desc" id="exerciseDesc">
-              กรุณาอนุญาตการใช้กล้องเพื่อเริ่มเกม
-            </div>
-          </div>
-
-          <div class="timer">
-            <div class="timer-value" id="timerValue">20</div>
-            <div class="timer-label">วินาที</div>
-          </div>
-        </div>
-
-        <!-- Accuracy Card -->
-        <div class="stat-card">
-          <h3 style="color: #334155; margin-bottom: 1rem;">🎯 ความแม่นยำ</h3>
-          <div class="accuracy-display">
-            <div class="accuracy-value" id="accuracyValue">0%</div>
-            <div class="accuracy-status status-good" id="accuracyStatus">
-              พร้อมเริ่มต้น
-            </div>
-          </div>
-          <div class="feedback-box" id="feedbackBox" style="display: none;">
-            <div class="feedback-text" id="feedbackText"></div>
-          </div>
-        </div>
-
-        <!-- Exercise List -->
-        <div class="stat-card">
-          <h3 style="color: #334155; margin-bottom: 1rem;">💪 รายการท่า</h3>
-          <ul class="exercise-list" id="exerciseList">
-            <li class="exercise-item current">
-              <span class="exercise-name">1. Neck Stretch (ยืดคอ)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">2. Shoulder Roll (หมุนไหล่)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">3. Back Stretch (ยืดหลัง)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">4. Side Bend (โน้มข้าง)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">5. Chest Opener (เปิดอก)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">6. Hip Flexor (ยืดสะโพก)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">7. Quad Stretch (ยืดต้นขา)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-            <li class="exercise-item">
-              <span class="exercise-name">8. Calf Stretch (ยืดน่อง)</span>
-              <span class="exercise-score score-pending">—</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MediaPipe Pose -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
-
-  <script>
-    // Tutorial Carousel
-    let currentSlide = 0;
-    const totalSlides = 8;
-
-    function showSlide(n) {
-      const items = document.querySelectorAll('.carousel-item');
-      const dots = document.querySelectorAll('.indicator-dot');
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-
-      if (n >= totalSlides) currentSlide = totalSlides - 1;
-      if (n < 0) currentSlide = 0;
-      else currentSlide = n;
-
-      items.forEach((item, index) => {
-        item.classList.remove('active');
-        if (index === currentSlide) {
-          item.classList.add('active');
-        }
-      });
-
-      dots.forEach((dot, index) => {
-        dot.classList.remove('active');
-        if (index === currentSlide) {
-          dot.classList.add('active');
-        }
-      });
-
-      prevBtn.disabled = currentSlide === 0;
-      nextBtn.disabled = currentSlide === totalSlides - 1;
-    }
-
-    function changeSlide(direction) {
-      showSlide(currentSlide + direction);
-    }
-
-    function goToSlide(index) {
-      showSlide(index);
-    }
-
-    function skipTutorial() {
-      document.getElementById('tutorialModal').style.display = 'none';
-    }
-
-    function completeTutorial() {
-      document.getElementById('tutorialModal').style.display = 'none';
-      localStorage.setItem('tutorialCompleted', 'true');
-    }
-
-    // Check if tutorial should be shown
-    window.addEventListener('load', () => {
-      const tutorialCompleted = localStorage.getItem('tutorialCompleted');
-      if (!tutorialCompleted) {
-        document.getElementById('tutorialModal').style.display = 'flex';
-      } else {
-        document.getElementById('tutorialModal').style.display = 'none';
-      }
-    });
-
-    // Keyboard navigation for tutorial
-    document.addEventListener('keydown', (e) => {
-      const modal = document.getElementById('tutorialModal');
-      if (modal.style.display === 'flex') {
-        if (e.key === 'ArrowLeft') changeSlide(-1);
-        if (e.key === 'ArrowRight') changeSlide(1);
-        if (e.key === 'Escape') skipTutorial();
-      }
-    });
-
-    // Game State
-    const gameState = {
-      currentExerciseIndex: 0,
-      exerciseScores: [],
-      isPaused: false,
-      isGameActive: false,
-      timeRemaining: 20,
-      currentAccuracy: 0,
-      streak: parseInt(localStorage.getItem('streak') || '0'),
-      totalPoints: parseInt(localStorage.getItem('totalPoints') || '0')
-    };
-
-    // Exercise Data with Real Images
-    const exercises = [
-      {
-        name: 'Neck Stretch',
-        nameTH: 'ยืดคอ',
-        duration: 20,
-        description: 'เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ รู้สึกถึงการยืดที่คอ',
-        imageUrl: 'https://i.imgur.com/OXAzoA9.jpeg',
-        tips: [
-          'อย่ากดหัวแรงเกินไป ใช้แรงเบาๆ',
-          'หายใจเข้าลึกๆ ช่วยให้กล้ามเนื้อผ่อนคลาย',
-          'ค้างแต่ละข้าง 15-20 วินาที'
-        ],
-        targetPose: 'neck_stretch'
-      },
-      {
-        name: 'Shoulder Roll',
-        nameTH: 'หมุนไหล่',
-        duration: 20,
-        description: 'หมุนไหล่ทั้งสองข้างไปข้างหน้า 10 ครั้ง แล้วข้างหลัง 10 ครั้ง',
-        imageUrl: 'https://i.imgur.com/P65kbKR.jpeg',
-        tips: [
-          'หมุนช้าๆ และควบคุมการเคลื่อนไหว',
-          'ยกไหล่ขึ้นเต็มที่ แล้วหมุนเป็นวงกลม',
-          'หายใจสม่ำเสมอตลอดการออกกำลังกาย'
-        ],
-        targetPose: 'shoulder_roll'
-      },
-      {
-        name: 'Back Stretch',
-        nameTH: 'ยืดหลัง',
-        duration: 20,
-        description: 'นั่งตรง ประสานมือ แล้วเหยียดแขนไปข้างหน้า โค้งหลังเล็กน้อย',
-        imageUrl: 'https://i.imgur.com/b7E6da1.jpeg',
-        tips: [
-          'ประสานมือแน่น เหยียดแขนตรงไปข้างหน้า',
-          'โค้งหลังออกมา รู้สึกถึงการยืดตรงกลางหลัง',
-          'ค้างไว้ 15-20 วินาที'
-        ],
-        targetPose: 'back_stretch'
-      },
-      {
-        name: 'Side Bend',
-        nameTH: 'โน้มข้าง',
-        duration: 20,
-        description: 'ยืนตรง ยกมือข้างหนึ่งขึ้น โน้มตัวไปอีกข้าง สลับซ้าย-ขวา',
-        imageUrl: 'https://i.imgur.com/ECdLcCI.jpeg',
-        tips: [
-          'ยืนตรง เท้าห่างประมาณความกว้างของไหล่',
-          'ยกมือข้างหนึ่งขึ้นเหนือศีรษะ',
-          'โน้มไปด้านข้าง รู้สึกยืดที่สีข้าง'
-        ],
-        targetPose: 'side_bend'
-      },
-      {
-        name: 'Chest Opener',
-        nameTH: 'เปิดอก',
-        duration: 20,
-        description: 'ประสานมือหลังหัว ดันอกไปข้างหน้า เหยียดหลังให้ตรง',
-        imageUrl: 'https://i.imgur.com/Z3BY6cS.jpeg',
-        tips: [
-          'ประสานมือไว้ด้านหลังหัว',
-          'ดันอกไปข้างหน้า ศอกชี้ออกด้านข้าง',
-          'รู้สึกถึงการเปิดของกล้ามเนื้ออก'
-        ],
-        targetPose: 'chest_opener'
-      },
-      {
-        name: 'Hip Flexor',
-        nameTH: 'ยืดสะโพก',
-        duration: 20,
-        description: 'ย่อเข่าครึ่งทาง เอนตัวไปข้างหลัง รู้สึกยืดที่ขาหน้า',
-        imageUrl: 'https://i.imgur.com/BxBSsp4.jpeg',
-        tips: [
-          'ทำท่า Lunge โดยเข่าหน้าตั้งฉาก',
-          'เอนตัวไปข้างหลังเล็กน้อย',
-          'รู้สึกยืดที่ด้านหน้าของสะโพกและต้นขา'
-        ],
-        targetPose: 'hip_flexor'
-      },
-      {
-        name: 'Quad Stretch',
-        nameTH: 'ยืดต้นขา',
-        duration: 20,
-        description: 'ยืนขาเดียว จับเท้าข้างหลัง ดึงเข้าหาก้น สลับซ้าย-ขวา',
-        imageUrl: 'https://i.imgur.com/rBhEIeQ.jpeg',
-        tips: [
-          'ยืนขาเดียว จับเท้าอีกข้างไว้',
-          'ดึงส้นเท้าเข้าหาก้น',
-          'ใช้มืออีกข้างจับผนังหรือเก้าอี้ช่วยทรงตัว'
-        ],
-        targetPose: 'quad_stretch'
-      },
-      {
-        name: 'Calf Stretch',
-        nameTH: 'ยืดน่อง',
-        duration: 20,
-        description: 'ก้าวเท้าข้างหนึ่งไปข้างหน้า เหยียดเข่าหลัง ส้นติดพื้น',
-        imageUrl: 'https://i.imgur.com/p3nQ5pS.jpeg',
-        tips: [
-          'ก้าวเท้าข้างหนึ่งไปข้างหน้า',
-          'เข่าหลังตึง ส้นเท้าติดพื้น',
-          'รู้สึกถึงการยืดที่น่องและเอ็นร้อยหวาย'
-        ],
-        targetPose: 'calf_stretch'
-      }
-    ];
-
-    // MediaPipe Pose Setup
-    let camera = null;
-    let pose = null;
-    let canvasCtx = null;
-
-    // Initialize
-    document.getElementById('streak').textContent = gameState.streak;
-    document.getElementById('totalPoints').textContent = gameState.totalPoints;
-
-    // Exercise Preview System
-    let previewCountdownInterval = null;
-
-    function showExercisePreview(exerciseIndex) {
-      const exercise = exercises[exerciseIndex];
-      if (!exercise) return;
-
-      // Update preview content
-      document.getElementById('previewNumber').textContent = `ท่าที่ ${exerciseIndex + 1}/8`;
-      document.getElementById('previewTitle').textContent = exercise.name;
-      document.getElementById('previewSubtitle').textContent = exercise.nameTH;
-      document.getElementById('previewDescription').textContent = exercise.description;
-
-      // Load image
-      const previewImage = document.getElementById('previewImage');
-      const imageLoading = document.getElementById('imageLoading');
-      
-      previewImage.style.opacity = '0';
-      imageLoading.style.display = 'block';
-      previewImage.src = exercise.imageUrl;
-      
-      previewImage.onload = () => {
-        imageLoading.style.display = 'none';
-        previewImage.style.opacity = '1';
-      };
-
-      previewImage.onerror = () => {
-        imageLoading.style.display = 'none';
-        previewImage.src = 'https://via.placeholder.com/800x600?text=ภาพไม่พร้อมใช้งาน';
-        previewImage.style.opacity = '1';
-      };
-
-      // Update tips
-      const tipsList = document.getElementById('previewTips');
-      tipsList.innerHTML = '';
-      exercise.tips.forEach(tip => {
-        const li = document.createElement('li');
-        li.textContent = tip;
-        tipsList.appendChild(li);
-      });
-
-      // Show preview overlay
-      document.getElementById('exercisePreview').style.display = 'flex';
-      document.getElementById('previewCountdown').style.display = 'none';
-      document.querySelector('.preview-actions').style.display = 'flex';
-    }
-
-    function startExerciseFromPreview() {
-      const previewOverlay = document.getElementById('exercisePreview');
-      const countdownDiv = document.getElementById('previewCountdown');
-      const actionsDiv = document.querySelector('.preview-actions');
-
-      // Show countdown, hide actions
-      countdownDiv.style.display = 'block';
-      actionsDiv.style.display = 'none';
-
-      // Start countdown
-      let countdown = 3;
-      document.getElementById('previewCountdownValue').textContent = countdown;
-
-      previewCountdownInterval = setInterval(() => {
-        countdown--;
-        
-        if (countdown > 0) {
-          document.getElementById('previewCountdownValue').textContent = countdown;
-        } else {
-          clearInterval(previewCountdownInterval);
-          previewOverlay.style.display = 'none';
-          actionsDiv.style.display = 'flex';
-          
-          // Start the actual exercise timer
-          startTimer();
-        }
-      }, 1000);
-    }
-
-    function skipPreview() {
-      clearInterval(previewCountdownInterval);
-      document.getElementById('exercisePreview').style.display = 'none';
-      document.querySelector('.preview-actions').style.display = 'flex';
-      
-      // Start exercise immediately
-      startTimer();
-    }
-
-    // Start Camera
-    async function startCamera() {
-      const overlay = document.getElementById('cameraOverlay');
-      overlay.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div style="color: white;">กำลังเปิดกล้อง...</div></div>';
-
-      try {
-        const video = document.getElementById('webcam');
-        const canvas = document.getElementById('canvas');
-        canvasCtx = canvas.getContext('2d');
-
-        // Initialize MediaPipe Pose
-        pose = new Pose({
-          locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-          }
-        });
-
-        pose.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          enableSegmentation: false,
-          smoothSegmentation: false,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-
-        pose.onResults(onPoseResults);
-
-        // Setup Camera
-        camera = new Camera(video, {
-          onFrame: async () => {
-            await pose.send({ image: video });
-          },
-          width: 640,
-          height: 480
-        });
-
-        await camera.start();
-
-        // Hide overlay and start game
-        overlay.style.display = 'none';
-        startGame();
-
-      } catch (error) {
-        console.error('Camera Error:', error);
-        overlay.innerHTML = `
+  <div class="game-layout">
+    <!-- VIDEO -->
+    <div class="video-section">
+      <div id="webcam-container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <div class="camera-overlay" id="cameraOverlay">
           <div class="overlay-content">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
-            <div>ไม่สามารถเข้าถึงกล้องได้</div>
-            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.8;">
-              กรุณาตรวจสอบว่าอนุญาตการใช้กล้องแล้ว
-            </div>
-            <button onclick="startCamera()">🔄 ลองอีกครั้ง</button>
-            <button onclick="startDemoMode()" style="margin-top: 0.5rem;">🎮 โหมดทดสอบ</button>
+            <div style="font-size:2.5rem;margin-bottom:1rem;">📸</div>
+            <div style="margin-bottom:0.5rem;">กรุณาอนุญาตการใช้กล้อง</div>
+            <button onclick="startCamera()">🎥 เริ่มใช้กล้อง</button>
+            <button onclick="startDemoMode()">🎮 โหมดทดสอบ</button>
           </div>
-        `;
-      }
-    }
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-secondary" onclick="pauseGame()" id="pauseBtn">⏸️ หยุดชั่วคราว</button>
+        <button class="btn btn-primary" onclick="skipExercise()">⏭️ ข้ามท่านี้</button>
+      </div>
+    </div>
 
-    // Process Pose Results
-    function onPoseResults(results) {
-      if (!results.poseLandmarks || gameState.isPaused || !gameState.isGameActive) {
-        return;
-      }
+    <!-- STATS -->
+    <div class="stats-section">
+      <div class="stat-card">
+        <h3>📊 ความคืบหน้า</h3>
+        <div class="progress-bar">
+          <div class="progress-label">
+            <span>ท่าที่ทำแล้ว</span>
+            <span><span id="currentExercise">0</span>/8</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="exercise-title" id="exerciseTitle">เตรียมตัว...</div>
+        <div class="exercise-desc" id="exerciseDesc">กรุณาเริ่มกล้องเพื่อเล่น</div>
+        <div class="timer">
+          <div class="timer-value" id="timerValue">20</div>
+          <div class="timer-label">วินาที</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <h3>🎯 ความแม่นยำ</h3>
+        <div class="accuracy-display">
+          <div class="accuracy-value" id="accuracyValue">0%</div>
+          <div class="accuracy-status status-good" id="accuracyStatus">พร้อมเริ่มต้น</div>
+        </div>
+        <div class="feedback-box" id="feedbackBox" style="display:none;">
+          <div class="feedback-text" id="feedbackText"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <h3>💪 รายการท่า</h3>
+        <ul class="exercise-list" id="exerciseList"></ul>
+      </div>
+    </div>
 
-      const canvas = document.getElementById('canvas');
-      const video = document.getElementById('webcam');
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    <!-- COMMUNITY -->
+    <div class="community-section">
+      <div class="live-players-card">
+        <div class="live-header">
+          <div class="live-title">🔴 กำลังเล่นอยู่</div>
+          <div class="live-count" id="liveCount">0</div>
+        </div>
+        <div class="live-list" id="liveList">
+          <div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">รอผู้เล่น...</div>
+        </div>
+      </div>
 
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
-      drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, 
-        { color: '#667eea', lineWidth: 4 });
-      drawLandmarks(canvasCtx, results.poseLandmarks,
-        { color: '#764ba2', lineWidth: 2, radius: 6 });
-
-      canvasCtx.restore();
-
-      const accuracy = calculatePoseAccuracy(results.poseLandmarks);
-      updateAccuracy(accuracy);
-    }
-
-    function calculatePoseAccuracy(landmarks) {
-      const nose = landmarks[0];
-      const leftShoulder = landmarks[11];
-      const rightShoulder = landmarks[12];
-      const leftHip = landmarks[23];
-      const rightHip = landmarks[24];
-
-      const shoulderWidth = Math.abs(leftShoulder.x - rightShoulder.x);
-      const bodyAlignment = Math.abs(
-        (leftShoulder.x + rightShoulder.x) / 2 - 
-        (leftHip.x + rightHip.x) / 2
-      );
-
-      let score = 70;
-
-      if (shoulderWidth > 0.15 && shoulderWidth < 0.35) {
-        score += 10;
-      }
-
-      if (bodyAlignment < 0.05) {
-        score += 10;
-      }
-
-      if (nose.visibility > 0.8) {
-        score += 10;
-      }
-
-      score += Math.random() * 10 - 5;
-
-      return Math.max(0, Math.min(100, Math.round(score)));
-    }
-
-    function updateAccuracy(value) {
-      gameState.currentAccuracy = value;
-      document.getElementById('accuracyValue').textContent = value + '%';
-
-      const statusEl = document.getElementById('accuracyStatus');
-      const feedbackBox = document.getElementById('feedbackBox');
-      const feedbackText = document.getElementById('feedbackText');
-
-      if (value >= 90) {
-        statusEl.textContent = '🎉 Perfect Posture!';
-        statusEl.className = 'accuracy-status status-excellent';
-        feedbackText.textContent = 'ยอดเยี่ยม! ทำท่าได้ถูกต้องมาก รักษาท่านี้ไว้';
-        feedbackBox.style.display = 'block';
-        feedbackBox.style.background = '#DCFCE7';
-        feedbackBox.style.borderLeftColor = '#10B981';
-      } else if (value >= 80) {
-        statusEl.textContent = '👍 Great Job!';
-        statusEl.className = 'accuracy-status status-good';
-        feedbackText.textContent = 'ดีมาก! รักษาท่านี้ไว้';
-        feedbackBox.style.display = 'block';
-        feedbackBox.style.background = '#E8EEFF';
-        feedbackBox.style.borderLeftColor = '#2196F3';
-      } else if (value >= 50) {
-        statusEl.textContent = '⚠️ Warning Zone';
-        statusEl.className = 'accuracy-status status-warning';
-        feedbackText.textContent = 'ลองปรับท่าให้ดีกว่านี้ ทำช้าๆ และรู้สึกถึงการยืด';
-        feedbackBox.style.display = 'block';
-        feedbackBox.style.background = '#FFF9E6';
-        feedbackBox.style.borderLeftColor = '#F59E0B';
-      } else {
-        statusEl.textContent = '❌ ต้องปรับปรุง';
-        statusEl.className = 'accuracy-status status-danger';
-        feedbackText.textContent = 'ลองยืดให้มากกว่านี้ และทำช้าลง';
-        feedbackBox.style.display = 'block';
-        feedbackBox.style.background = '#FEE2E2';
-        feedbackBox.style.borderLeftColor = '#EF4444';
-      }
-    }
-
-    function startGame() {
-      gameState.isGameActive = true;
-      gameState.currentExerciseIndex = 0;
-      gameState.exerciseScores = [];
-      loadExercise(0);
-    }
-
-    function loadExercise(index) {
-      if (index >= exercises.length) {
-        endGame();
-        return;
-      }
-
-      const exercise = exercises[index];
-      gameState.currentExerciseIndex = index;
-      gameState.timeRemaining = exercise.duration;
-
-      document.getElementById('exerciseTitle').textContent = 
-        `${index + 1}. ${exercise.nameTH}`;
-      document.getElementById('exerciseDesc').textContent = exercise.description;
-      document.getElementById('currentExercise').textContent = index + 1;
-      document.getElementById('progressFill').style.width = 
-        ((index / exercises.length) * 100) + '%';
-
-      const items = document.querySelectorAll('.exercise-item');
-      items.forEach((item, i) => {
-        item.classList.remove('current', 'completed');
-        if (i === index) {
-          item.classList.add('current');
-        } else if (i < index) {
-          item.classList.add('completed');
-        }
-      });
-
-      // Show preview instead of starting immediately
-      showExercisePreview(index);
-    }
-
-    let timerInterval = null;
-    function startTimer() {
-      clearInterval(timerInterval);
-      
-      document.getElementById('timerValue').textContent = gameState.timeRemaining;
-      
-      timerInterval = setInterval(() => {
-        if (gameState.isPaused) return;
-
-        gameState.timeRemaining--;
-        document.getElementById('timerValue').textContent = gameState.timeRemaining;
-
-        if (gameState.timeRemaining <= 0) {
-          clearInterval(timerInterval);
-          completeExercise();
-        }
-      }, 1000);
-    }
-
-    function completeExercise() {
-      const score = gameState.currentAccuracy;
-      gameState.exerciseScores.push(score);
-
-      const items = document.querySelectorAll('.exercise-item');
-      const scoreSpan = items[gameState.currentExerciseIndex].querySelector('.exercise-score');
-      scoreSpan.textContent = score + '%';
-      
-      if (score >= 90) {
-        scoreSpan.className = 'exercise-score score-excellent';
-      } else if (score >= 80) {
-        scoreSpan.className = 'exercise-score score-good';
-      } else {
-        scoreSpan.className = 'exercise-score score-warning';
-      }
-
-      setTimeout(() => {
-        loadExercise(gameState.currentExerciseIndex + 1);
-      }, 2000);
-    }
-
-    function skipExercise() {
-      if (!gameState.isGameActive) return;
-      
-      clearInterval(timerInterval);
-      gameState.exerciseScores.push(0);
-      
-      const items = document.querySelectorAll('.exercise-item');
-      const scoreSpan = items[gameState.currentExerciseIndex].querySelector('.exercise-score');
-      scoreSpan.textContent = 'Skip';
-      scoreSpan.className = 'exercise-score score-pending';
-      
-      loadExercise(gameState.currentExerciseIndex + 1);
-    }
-
-    function pauseGame() {
-      gameState.isPaused = !gameState.isPaused;
-      const btn = document.getElementById('pauseBtn');
-      
-      if (gameState.isPaused) {
-        btn.innerHTML = '▶️ เล่นต่อ';
-        btn.classList.remove('btn-secondary');
-        btn.classList.add('btn-primary');
-      } else {
-        btn.innerHTML = '⏸️ หยุดชั่วคราว';
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-secondary');
-      }
-    }
-
-    function endGame() {
-      gameState.isGameActive = false;
-      clearInterval(timerInterval);
-
-      const avgScore = Math.round(
-        gameState.exerciseScores.reduce((a, b) => a + b, 0) / 
-        gameState.exerciseScores.length
-      );
-
-      gameState.streak++;
-      const pointsEarned = Math.round(avgScore / 2);
-      gameState.totalPoints += pointsEarned;
-
-      localStorage.setItem('streak', gameState.streak);
-      localStorage.setItem('totalPoints', gameState.totalPoints);
-
-      showResults(avgScore, pointsEarned);
-    }
-
-    function showResults(avgScore, pointsEarned) {
-      const overlay = document.getElementById('cameraOverlay');
-      overlay.style.display = 'flex';
-      overlay.style.background = 'rgba(0, 0, 0, 0.95)';
-      
-      let badges = '';
-      if (avgScore >= 90) badges += '🌟 ';
-      if (gameState.streak >= 7) badges += '🔥 ';
-      if (gameState.exerciseScores.filter(s => s >= 95).length >= 5) badges += '💯 ';
-
-      overlay.innerHTML = `
-        <div class="overlay-content" style="max-width: 500px;">
-          <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
-          <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">เสร็จสิ้น!</h2>
-          
-          <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 1rem; margin-bottom: 1.5rem;">
-            <div style="font-size: 4rem; font-weight: 700; margin-bottom: 0.5rem;">
-              ${avgScore}%
-            </div>
-            <div style="font-size: 1.25rem; opacity: 0.9;">
-              คะแนนเฉลี่ย
+      <div class="leaderboard-card">
+        <div class="lb-header">
+          <div class="lb-title">🏆 Leaderboard</div>
+          <div class="lb-tabs">
+            <button class="lb-tab active" id="tabToday" onclick="switchTab('today')">วันนี้</button>
+            <button class="lb-tab" id="tabWeek" onclick="switchTab('week')">สัปดาห์</button>
+            <button class="lb-tab" id="tabAll" onclick="switchTab('all')">ตลอดกาล</button>
+          </div>
+        </div>
+        <div class="my-rank-banner">
+          <div class="my-rank-left">
+            <div class="banner-avatar-wrap" id="bannerAvatarWrap"></div>
+            <div>
+              <div style="font-size:0.75rem;opacity:0.85;">อันดับของฉัน</div>
+              <div class="my-rank-number">#<span id="bannerRank">—</span></div>
             </div>
           </div>
-
-          <div style="text-align: left; background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.75rem;">📊 ท่าที่ทำ: 8/8</div>
-            <div style="margin-bottom: 0.75rem;">💎 Points: +${pointsEarned}</div>
-            <div style="margin-bottom: 0.75rem;">🔥 Streak: ${gameState.streak} วัน</div>
-            <div>🏆 Badges: ${badges || 'ไม่มี'}</div>
+          <div style="text-align:right;">
+            <div class="my-rank-points" id="bannerPoints">0 pts</div>
+            <div style="font-size:0.75rem;opacity:0.85;">คะแนนสะสม</div>
           </div>
+        </div>
+        <div class="lb-list" id="lbList">
+          <div style="text-align:center;color:#94A3B8;padding:2rem;font-size:0.875rem;">กำลังโหลด...</div>
+        </div>
+      </div>
 
-          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button onclick="location.href='index.html'" style="flex: 1; padding: 1rem; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 0.75rem; font-weight: 600; cursor: pointer; font-size: 1rem; font-family: 'Prompt', sans-serif;">
-              🏠 กลับหน้าหลัก
-            </button>
-            <button onclick="location.reload()" style="flex: 1; padding: 1rem; background: white; color: #667eea; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; font-size: 1rem; font-family: 'Prompt', sans-serif;">
-              🔄 เล่นอีกรอบ
-            </button>
-          </div>
+      <div class="feed-card">
+        <h3 style="color:#334155;margin-bottom:1rem;font-size:1rem;">📣 กิจกรรมล่าสุด</h3>
+        <div class="feed-list" id="feedList">
+          <div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">รอกิจกรรม...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+<script>
+// ============================================================
+// CARTOON AVATARS — SVG น่ารัก 12 ตัว
+// ============================================================
+const cartoonAvatars = [
+  {
+    id: 'cat',
+    name: 'แมวส้ม',
+    desc: 'สายนอน แต่ออกกำลังได้!',
+    color: '#FF8C42',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="30" cy="32" r="20" fill="#FF8C42"/>
+      <ellipse cx="30" cy="44" rx="13" ry="8" fill="#FFB07A"/>
+      <!-- ears -->
+      <polygon points="14,16 10,4 22,14" fill="#FF8C42"/>
+      <polygon points="46,16 50,4 38,14" fill="#FF8C42"/>
+      <polygon points="15,15 12,7 21,14" fill="#FFB07A"/>
+      <polygon points="45,15 48,7 39,14" fill="#FFB07A"/>
+      <!-- eyes -->
+      <ellipse cx="23" cy="30" rx="4" ry="4.5" fill="white"/>
+      <ellipse cx="37" cy="30" rx="4" ry="4.5" fill="white"/>
+      <circle cx="23" cy="31" r="2.5" fill="#2D1B00"/>
+      <circle cx="37" cy="31" r="2.5" fill="#2D1B00"/>
+      <circle cx="24" cy="30" r="1" fill="white"/>
+      <circle cx="38" cy="30" r="1" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="36" rx="2" ry="1.5" fill="#FF6B9D"/>
+      <!-- mouth -->
+      <path d="M27,38 Q30,41 33,38" stroke="#2D1B00" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- whiskers -->
+      <line x1="10" y1="35" x2="22" y2="36.5" stroke="#2D1B00" stroke-width="0.8"/>
+      <line x1="10" y1="38" x2="22" y2="38" stroke="#2D1B00" stroke-width="0.8"/>
+      <line x1="38" y1="36.5" x2="50" y2="35" stroke="#2D1B00" stroke-width="0.8"/>
+      <line x1="38" y1="38" x2="50" y2="38" stroke="#2D1B00" stroke-width="0.8"/>
+    </svg>`
+  },
+  {
+    id: 'bear',
+    name: 'หมีน้ำตาล',
+    desc: 'แข็งแกร่งและน่ารัก',
+    color: '#8B6914',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="30" cy="33" r="19" fill="#C4952A"/>
+      <!-- ears -->
+      <circle cx="14" cy="16" r="7" fill="#C4952A"/>
+      <circle cx="46" cy="16" r="7" fill="#C4952A"/>
+      <circle cx="14" cy="16" r="4" fill="#E8B84B"/>
+      <circle cx="46" cy="16" r="4" fill="#E8B84B"/>
+      <!-- face -->
+      <ellipse cx="30" cy="38" rx="11" ry="8" fill="#E8B84B"/>
+      <!-- eyes -->
+      <circle cx="23" cy="30" r="4" fill="white"/>
+      <circle cx="37" cy="30" r="4" fill="white"/>
+      <circle cx="23" cy="31" r="2.5" fill="#1A0A00"/>
+      <circle cx="37" cy="31" r="2.5" fill="#1A0A00"/>
+      <circle cx="24" cy="30" r="1" fill="white"/>
+      <circle cx="38" cy="30" r="1" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="36" rx="3" ry="2" fill="#1A0A00"/>
+      <!-- mouth -->
+      <path d="M26,39 Q30,43 34,39" stroke="#1A0A00" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'bunny',
+    name: 'กระต่ายขาว',
+    desc: 'กระโดดไว ยืดหยุ่นดี',
+    color: '#E8E8E8',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <ellipse cx="21" cy="12" rx="5" ry="12" fill="#F0F0F0"/>
+      <ellipse cx="39" cy="12" rx="5" ry="12" fill="#F0F0F0"/>
+      <ellipse cx="21" cy="12" rx="2.5" ry="9" fill="#FFB3C6"/>
+      <ellipse cx="39" cy="12" rx="2.5" ry="9" fill="#FFB3C6"/>
+      <!-- head -->
+      <circle cx="30" cy="34" r="19" fill="#F5F5F5"/>
+      <!-- cheeks -->
+      <ellipse cx="19" cy="38" rx="5" ry="3.5" fill="#FFD1DC" opacity="0.6"/>
+      <ellipse cx="41" cy="38" rx="5" ry="3.5" fill="#FFD1DC" opacity="0.6"/>
+      <!-- eyes -->
+      <circle cx="23" cy="31" r="4" fill="white"/>
+      <circle cx="37" cy="31" r="4" fill="white"/>
+      <circle cx="23" cy="32" r="2.5" fill="#5B6EF5"/>
+      <circle cx="37" cy="32" r="2.5" fill="#5B6EF5"/>
+      <circle cx="24" cy="31" r="1" fill="white"/>
+      <circle cx="38" cy="31" r="1" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="37" rx="2" ry="1.5" fill="#FF8FAB"/>
+      <!-- mouth -->
+      <path d="M27,39.5 Q30,43 33,39.5" stroke="#FF8FAB" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'fox',
+    name: 'จิ้งจอกแดง',
+    desc: 'ฉลาดและคล่องแคล่ว',
+    color: '#E8521A',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <polygon points="14,22 8,4 24,18" fill="#E8521A"/>
+      <polygon points="46,22 52,4 36,18" fill="#E8521A"/>
+      <polygon points="15,21 10,8 23,18" fill="#FFD4A3"/>
+      <polygon points="45,21 50,8 37,18" fill="#FFD4A3"/>
+      <!-- head -->
+      <circle cx="30" cy="33" r="19" fill="#E8521A"/>
+      <!-- white face -->
+      <ellipse cx="30" cy="38" rx="13" ry="10" fill="#FFF5E8"/>
+      <!-- cheeks -->
+      <ellipse cx="18" cy="36" rx="4" ry="3" fill="#FF8C5A" opacity="0.5"/>
+      <ellipse cx="42" cy="36" rx="4" ry="3" fill="#FF8C5A" opacity="0.5"/>
+      <!-- eyes -->
+      <ellipse cx="23" cy="30" rx="4" ry="4" fill="white"/>
+      <ellipse cx="37" cy="30" rx="4" ry="4" fill="white"/>
+      <circle cx="23" cy="31" r="2.5" fill="#1A0A00"/>
+      <circle cx="37" cy="31" r="2.5" fill="#1A0A00"/>
+      <circle cx="24" cy="30" r="1" fill="white"/>
+      <circle cx="38" cy="30" r="1" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#1A0A00"/>
+      <!-- mouth -->
+      <path d="M27,39 Q30,42 33,39" stroke="#1A0A00" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'panda',
+    name: 'แพนด้า',
+    desc: 'ขี้เซาแต่ทำได้ทุกท่า',
+    color: '#333333',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <circle cx="14" cy="16" r="8" fill="#333"/>
+      <circle cx="46" cy="16" r="8" fill="#333"/>
+      <!-- head -->
+      <circle cx="30" cy="33" r="19" fill="#F5F5F5"/>
+      <!-- eye patches -->
+      <ellipse cx="22" cy="29" rx="7" ry="6" fill="#333" transform="rotate(-15,22,29)"/>
+      <ellipse cx="38" cy="29" rx="7" ry="6" fill="#333" transform="rotate(15,38,29)"/>
+      <!-- eyes -->
+      <circle cx="22" cy="30" r="3.5" fill="white"/>
+      <circle cx="38" cy="30" r="3.5" fill="white"/>
+      <circle cx="22" cy="31" r="2" fill="#1A0A00"/>
+      <circle cx="38" cy="31" r="2" fill="#1A0A00"/>
+      <circle cx="23" cy="30" r="0.8" fill="white"/>
+      <circle cx="39" cy="30" r="0.8" fill="white"/>
+      <!-- nose area -->
+      <ellipse cx="30" cy="37" rx="9" ry="6" fill="#FFD4D4"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#333"/>
+      <!-- mouth -->
+      <path d="M27,39.5 Q30,43 33,39.5" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'penguin',
+    name: 'เพนกวิน',
+    desc: 'เย็นสบายทุกท่า',
+    color: '#2C3E7A',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- head -->
+      <circle cx="30" cy="28" r="18" fill="#2C3E7A"/>
+      <!-- white face -->
+      <ellipse cx="30" cy="31" rx="11" ry="13" fill="#F5F5F5"/>
+      <!-- eyes -->
+      <circle cx="24" cy="26" r="4.5" fill="white"/>
+      <circle cx="36" cy="26" r="4.5" fill="white"/>
+      <circle cx="24" cy="27" r="2.5" fill="#1A1A2E"/>
+      <circle cx="36" cy="27" r="2.5" fill="#1A1A2E"/>
+      <circle cx="25" cy="26" r="1" fill="white"/>
+      <circle cx="37" cy="26" r="1" fill="white"/>
+      <!-- beak -->
+      <ellipse cx="30" cy="33" rx="3.5" ry="2.5" fill="#FF9500"/>
+      <!-- cheeks -->
+      <ellipse cx="19" cy="31" rx="4" ry="3" fill="#FF6B8A" opacity="0.5"/>
+      <ellipse cx="41" cy="31" rx="4" ry="3" fill="#FF6B8A" opacity="0.5"/>
+      <!-- body hint -->
+      <ellipse cx="30" cy="54" rx="14" ry="8" fill="#2C3E7A"/>
+      <ellipse cx="30" cy="54" rx="9" ry="6" fill="#F5F5F5"/>
+    </svg>`
+  },
+  {
+    id: 'tiger',
+    name: 'เสือน้อย',
+    desc: 'แข็งแกร่งที่สุด!',
+    color: '#E8931A',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <polygon points="14,20 9,6 23,16" fill="#E8931A"/>
+      <polygon points="46,20 51,6 37,16" fill="#E8931A"/>
+      <polygon points="15,19 11,9 22,16" fill="#FFD4A3"/>
+      <polygon points="45,19 49,9 38,16" fill="#FFD4A3"/>
+      <!-- head -->
+      <circle cx="30" cy="33" r="19" fill="#E8931A"/>
+      <!-- stripes -->
+      <path d="M18,20 Q22,25 18,30" stroke="#C4640A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M42,20 Q38,25 42,30" stroke="#C4640A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M25,16 Q30,20 35,16" stroke="#C4640A" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- face -->
+      <ellipse cx="30" cy="38" rx="13" ry="9" fill="#FFD4A3"/>
+      <!-- eyes -->
+      <circle cx="23" cy="30" r="4" fill="white"/>
+      <circle cx="37" cy="30" r="4" fill="white"/>
+      <circle cx="23" cy="31" r="2.5" fill="#1A6600"/>
+      <circle cx="37" cy="31" r="2.5" fill="#1A6600"/>
+      <circle cx="24" cy="30" r="1" fill="white"/>
+      <circle cx="38" cy="30" r="1" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="36" rx="2.5" ry="2" fill="#CC3366"/>
+      <!-- mouth -->
+      <path d="M27,39 Q30,43 33,39" stroke="#CC3366" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'frog',
+    name: 'กบเขียว',
+    desc: 'กระโดดได้ทุกท่า!',
+    color: '#4CAF50',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- eye bumps -->
+      <circle cx="18" cy="18" r="9" fill="#4CAF50"/>
+      <circle cx="42" cy="18" r="9" fill="#4CAF50"/>
+      <!-- head -->
+      <circle cx="30" cy="34" r="19" fill="#5DBF61"/>
+      <!-- belly -->
+      <ellipse cx="30" cy="39" rx="13" ry="10" fill="#A5E6A8"/>
+      <!-- eyes -->
+      <circle cx="18" cy="18" r="6" fill="white"/>
+      <circle cx="42" cy="18" r="6" fill="white"/>
+      <circle cx="18" cy="19" r="3.5" fill="#1A4A00"/>
+      <circle cx="42" cy="19" r="3.5" fill="#1A4A00"/>
+      <circle cx="19" cy="18" r="1.2" fill="white"/>
+      <circle cx="43" cy="18" r="1.2" fill="white"/>
+      <!-- nostrils -->
+      <circle cx="27" cy="32" r="2" fill="#3A9A3E"/>
+      <circle cx="33" cy="32" r="2" fill="#3A9A3E"/>
+      <!-- smile -->
+      <path d="M20,39 Q30,47 40,39" stroke="#3A9A3E" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'chick',
+    name: 'ลูกไก่',
+    desc: 'ตัวเล็กแต่ใจสู้!',
+    color: '#FFD700',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- body -->
+      <circle cx="30" cy="36" r="18" fill="#FFE135"/>
+      <!-- head -->
+      <circle cx="30" cy="24" r="13" fill="#FFE135"/>
+      <!-- wing hints -->
+      <ellipse cx="13" cy="38" rx="6" ry="10" fill="#FFD700" transform="rotate(-20,13,38)"/>
+      <ellipse cx="47" cy="38" rx="6" ry="10" fill="#FFD700" transform="rotate(20,47,38)"/>
+      <!-- cheeks -->
+      <ellipse cx="20" cy="26" rx="4" ry="3" fill="#FFB3C6" opacity="0.6"/>
+      <ellipse cx="40" cy="26" rx="4" ry="3" fill="#FFB3C6" opacity="0.6"/>
+      <!-- eyes -->
+      <circle cx="24" cy="22" r="4" fill="white"/>
+      <circle cx="36" cy="22" r="4" fill="white"/>
+      <circle cx="24" cy="23" r="2.5" fill="#1A0A00"/>
+      <circle cx="36" cy="23" r="2.5" fill="#1A0A00"/>
+      <circle cx="25" cy="22" r="1" fill="white"/>
+      <circle cx="37" cy="22" r="1" fill="white"/>
+      <!-- beak -->
+      <polygon points="27,28 33,28 30,33" fill="#FF8C00"/>
+      <!-- hair -->
+      <ellipse cx="30" cy="11" rx="3" ry="6" fill="#FFD700" transform="rotate(0,30,14)"/>
+      <ellipse cx="24" cy="13" rx="2.5" ry="5" fill="#FFD700" transform="rotate(-20,24,13)"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="5" fill="#FFD700" transform="rotate(20,36,13)"/>
+    </svg>`
+  },
+  {
+    id: 'koala',
+    name: 'โคอาล่า',
+    desc: 'ผ่อนคลายทุกท่า',
+    color: '#708090',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- big ears -->
+      <circle cx="12" cy="19" r="11" fill="#A0A8B0"/>
+      <circle cx="48" cy="19" r="11" fill="#A0A8B0"/>
+      <circle cx="12" cy="19" r="7" fill="#C8D0D8"/>
+      <circle cx="48" cy="19" r="7" fill="#C8D0D8"/>
+      <!-- head -->
+      <circle cx="30" cy="34" r="18" fill="#A0A8B0"/>
+      <!-- face -->
+      <ellipse cx="30" cy="36" rx="12" ry="9" fill="#C8D0D8"/>
+      <!-- eyes -->
+      <circle cx="23" cy="30" r="4" fill="white"/>
+      <circle cx="37" cy="30" r="4" fill="white"/>
+      <circle cx="23" cy="31" r="2.5" fill="#2D3436"/>
+      <circle cx="37" cy="31" r="2.5" fill="#2D3436"/>
+      <circle cx="24" cy="30" r="1" fill="white"/>
+      <circle cx="38" cy="30" r="1" fill="white"/>
+      <!-- big nose -->
+      <ellipse cx="30" cy="36" rx="5" ry="4" fill="#5D6873"/>
+      <ellipse cx="29" cy="35.5" rx="2" ry="1.5" fill="#7A8590" opacity="0.5"/>
+      <!-- mouth -->
+      <path d="M26,41 Q30,45 34,41" stroke="#5D6873" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'hamster',
+    name: 'แฮมสเตอร์',
+    desc: 'วิ่งวงล้อทุกวัน!',
+    color: '#E8C49A',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <circle cx="16" cy="17" r="7" fill="#E8C49A"/>
+      <circle cx="44" cy="17" r="7" fill="#E8C49A"/>
+      <circle cx="16" cy="17" r="4.5" fill="#FFB3C6"/>
+      <circle cx="44" cy="17" r="4.5" fill="#FFB3C6"/>
+      <!-- head -->
+      <circle cx="30" cy="33" r="19" fill="#E8C49A"/>
+      <!-- chubby cheeks -->
+      <ellipse cx="13" cy="36" rx="8" ry="6" fill="#FFD4B0"/>
+      <ellipse cx="47" cy="36" rx="8" ry="6" fill="#FFD4B0"/>
+      <!-- face center -->
+      <ellipse cx="30" cy="38" rx="10" ry="7" fill="#FFD4B0"/>
+      <!-- eyes -->
+      <circle cx="23" cy="29" r="4.5" fill="white"/>
+      <circle cx="37" cy="29" r="4.5" fill="white"/>
+      <circle cx="23" cy="30" r="3" fill="#1A0A00"/>
+      <circle cx="37" cy="30" r="3" fill="#1A0A00"/>
+      <circle cx="24" cy="29" r="1.2" fill="white"/>
+      <circle cx="38" cy="29" r="1.2" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="30" cy="35.5" rx="2" ry="1.5" fill="#FF8FAB"/>
+      <!-- mouth -->
+      <path d="M27,38 Q30,41.5 33,38" stroke="#CC6680" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    id: 'dinosaur',
+    name: 'ไดโนเขียว',
+    desc: 'แกร่งที่สุดในยุค!',
+    color: '#27AE60',
+    svg: `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- spikes -->
+      <polygon points="22,8 25,18 19,18" fill="#1E8449"/>
+      <polygon points="30,5 33,16 27,16" fill="#1E8449"/>
+      <polygon points="38,8 41,18 35,18" fill="#1E8449"/>
+      <!-- head -->
+      <ellipse cx="30" cy="32" rx="19" ry="17" fill="#2ECC71"/>
+      <!-- belly -->
+      <ellipse cx="30" cy="36" rx="12" ry="9" fill="#82E0AA"/>
+      <!-- eyes -->
+      <circle cx="22" cy="27" r="5" fill="white"/>
+      <circle cx="38" cy="27" r="5" fill="white"/>
+      <circle cx="22" cy="28" r="3" fill="#1A4A00"/>
+      <circle cx="38" cy="28" r="3" fill="#1A4A00"/>
+      <circle cx="23" cy="27" r="1.2" fill="white"/>
+      <circle cx="39" cy="27" r="1.2" fill="white"/>
+      <!-- nostrils -->
+      <circle cx="27" cy="33" r="1.5" fill="#1E8449"/>
+      <circle cx="33" cy="33" r="1.5" fill="#1E8449"/>
+      <!-- smile -->
+      <path d="M22,38 Q30,44 38,38" stroke="#1E8449" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- teeth -->
+      <rect x="26" y="38" width="3" height="3" rx="1" fill="white"/>
+      <rect x="31" y="38" width="3" height="3" rx="1" fill="white"/>
+    </svg>`
+  }
+];
+
+// ============================================================
+// FIREBASE CONFIG
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCZ-mHyLPnPhsbpmGEvbpf4u7Kq1lBmJTU",
+  authDomain: "smart-stretch-game.firebaseapp.com",
+  databaseURL: "https://smart-stretch-game-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-stretch-game",
+  storageBucket: "smart-stretch-game.firebasestorage.app",
+  messagingSenderId: "881830815713",
+  appId: "1:881830815713:web:220f50995dcf594a0014a0"
+};
+
+let db = null;
+let firebaseReady = false;
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  firebaseReady = true;
+  console.log('✅ Firebase connected');
+} catch (e) {
+  console.warn('⚠️ Firebase not configured');
+}
+
+// ============================================================
+// AVATAR SYSTEM
+// ============================================================
+let selectedAvatarId = cartoonAvatars[0].id;
+
+function getAvatarById(id) {
+  return cartoonAvatars.find(a => a.id === id) || cartoonAvatars[0];
+}
+
+function renderAvatarSVG(id, size = 36) {
+  const av = getAvatarById(id);
+  const div = document.createElement('div');
+  div.innerHTML = av.svg;
+  const svg = div.querySelector('svg');
+  if (svg) {
+    svg.style.width = size + 'px';
+    svg.style.height = size + 'px';
+  }
+  return div.innerHTML;
+}
+
+function initAvatarGrid() {
+  const grid = document.getElementById('avatarGrid');
+  grid.innerHTML = '';
+
+  cartoonAvatars.forEach((av, i) => {
+    const div = document.createElement('div');
+    div.className = 'avatar-option' + (i === 0 ? ' selected' : '');
+    div.title = av.name;
+    div.innerHTML = `
+      <div class="avatar-svg">${av.svg}</div>
+      <div class="avatar-name">${av.name}</div>
+    `;
+    div.onclick = () => {
+      document.querySelectorAll('.avatar-option').forEach(a => a.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedAvatarId = av.id;
+      updateSelectedPreview(av);
+    };
+    grid.appendChild(div);
+  });
+
+  // Init preview
+  updateSelectedPreview(cartoonAvatars[0]);
+}
+
+function updateSelectedPreview(av) {
+  const preview = document.getElementById('selectedAvatarPreview');
+  const nameEl = document.getElementById('selectedAvatarName');
+  const descEl = document.getElementById('selectedAvatarDesc');
+
+  preview.innerHTML = av.svg;
+  const svg = preview.querySelector('svg');
+  if (svg) { svg.style.width = '44px'; svg.style.height = '44px'; }
+  nameEl.textContent = av.name;
+  descEl.textContent = av.desc;
+}
+
+function setHeaderAvatar(avatarId) {
+  const av = getAvatarById(avatarId);
+
+  // Header
+  const wrap = document.getElementById('headerAvatarWrap');
+  if (wrap) {
+    wrap.innerHTML = av.svg;
+    const svg = wrap.querySelector('svg');
+    if (svg) { svg.style.width = '36px'; svg.style.height = '36px'; }
+  }
+
+  // Banner
+  const banner = document.getElementById('bannerAvatarWrap');
+  if (banner) {
+    banner.innerHTML = av.svg;
+    const svg = banner.querySelector('svg');
+    if (svg) { svg.style.width = '36px'; svg.style.height = '36px'; }
+  }
+}
+
+// ============================================================
+// PLAYER STATE
+// ============================================================
+let currentPlayer = null;
+let sessionId = null;
+let currentTab = 'today';
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+function handleLogin() {
+  const name = document.getElementById('usernameInput').value.trim();
+  const dept = document.getElementById('departmentInput').value.trim();
+  const av = getAvatarById(selectedAvatarId);
+
+  if (!name) {
+    showToast('⚠️', 'กรุณาใส่ชื่อ', 'โปรดระบุชื่อผู้เล่นก่อนเข้าร่วม');
+    document.getElementById('usernameInput').focus();
+    return;
+  }
+
+  sessionId = generateId();
+
+  currentPlayer = {
+    id: sessionId,
+    name: name,
+    avatarId: selectedAvatarId,
+    avatarName: av.name,
+    department: dept || 'ไม่ระบุ',
+    streak: parseInt(localStorage.getItem('streak') || '0'),
+    totalPoints: parseInt(localStorage.getItem('totalPoints') || '0'),
+    joinedAt: Date.now(),
+    isPlaying: true,
+    currentExercise: 0,
+    lastScore: 0
+  };
+
+  localStorage.setItem('playerName', name);
+  localStorage.setItem('playerAvatarId', selectedAvatarId);
+  localStorage.setItem('playerDept', dept);
+
+  // Update header
+  setHeaderAvatar(selectedAvatarId);
+  document.getElementById('headerUsername').textContent = name;
+  document.getElementById('headerDept').textContent = dept || '—';
+  document.getElementById('streak').textContent = currentPlayer.streak;
+  document.getElementById('totalPoints').textContent = currentPlayer.totalPoints;
+  document.getElementById('bannerPoints').textContent = currentPlayer.totalPoints + ' pts';
+
+  if (firebaseReady) {
+    registerPlayerOnline();
+    loadLeaderboard();
+    listenLivePlayers();
+    listenFeed();
+    listenOnlineCount();
+    addFeedEvent('join', name, av.name, '');
+  }
+
+  document.getElementById('loginScreen').style.display = 'none';
+
+  const tutorialDone = localStorage.getItem('tutorialCompleted');
+  if (!tutorialDone) {
+    buildTutorial();
+    document.getElementById('tutorialModal').style.display = 'flex';
+  }
+
+  buildExerciseList();
+  initState();
+
+  showToast('🎉', `ยินดีต้อนรับ ${name}!`, `ตัวละคร: ${av.name}`);
+}
+
+// ============================================================
+// FIREBASE
+// ============================================================
+function registerPlayerOnline() {
+  if (!firebaseReady || !currentPlayer) return;
+  const ref = db.ref(`live/${sessionId}`);
+  ref.set({
+    id: sessionId,
+    name: currentPlayer.name,
+    avatarId: currentPlayer.avatarId,
+    avatarName: currentPlayer.avatarName,
+    department: currentPlayer.department,
+    isPlaying: true,
+    currentExercise: 0,
+    score: 0,
+    timestamp: Date.now()
+  });
+  ref.onDisconnect().remove();
+}
+
+function updateLiveStatus(exerciseIndex, score) {
+  if (!firebaseReady || !sessionId) return;
+  db.ref(`live/${sessionId}`).update({ currentExercise: exerciseIndex, score: score, timestamp: Date.now() });
+}
+
+function saveScore(avgScore, exercisesCount) {
+  if (!firebaseReady || !currentPlayer) return;
+  const today = new Date().toISOString().split('T')[0];
+  const week = getWeekKey();
+  const entry = {
+    id: sessionId,
+    name: currentPlayer.name,
+    avatarId: currentPlayer.avatarId,
+    avatarName: currentPlayer.avatarName,
+    department: currentPlayer.department,
+    score: avgScore,
+    exercises: exercisesCount,
+    points: currentPlayer.totalPoints,
+    streak: currentPlayer.streak,
+    timestamp: Date.now()
+  };
+  db.ref(`leaderboard/today/${today}/${sessionId}`).set(entry);
+  db.ref(`leaderboard/week/${week}/${sessionId}`).set(entry);
+  db.ref(`leaderboard/all/${sessionId}`).set(entry);
+}
+
+function getWeekKey() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d.setDate(diff));
+  return mon.toISOString().split('T')[0];
+}
+
+function addFeedEvent(type, name, avatarName, extra) {
+  if (!firebaseReady) return;
+  const messages = {
+    join: `${avatarName} ${name} เข้าร่วมการแข่งขัน!`,
+    complete: `${avatarName} ${name} ทำครบ 8 ท่า ได้ ${extra}%!`,
+    milestone: `${avatarName} ${name} ทำสถิติใหม่! ${extra} pts`,
+    exercise: `${avatarName} ${name} เริ่มท่า ${extra}`
+  };
+  db.ref('feed').push({ type, text: messages[type] || `${name} ${extra}`, timestamp: Date.now() });
+}
+
+// ============================================================
+// REALTIME LISTENERS
+// ============================================================
+function listenLivePlayers() {
+  if (!firebaseReady) return;
+  db.ref('live').on('value', snap => {
+    const players = [];
+    snap.forEach(c => players.push(c.val()));
+    players.sort((a, b) => (b.score || 0) - (a.score || 0));
+    document.getElementById('liveCount').textContent = players.length;
+
+    const list = document.getElementById('liveList');
+    if (players.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">ยังไม่มีผู้เล่น</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    players.slice(0, 10).forEach(p => {
+      const isMe = p.id === sessionId;
+      const av = getAvatarById(p.avatarId || 'cat');
+      const exerciseName = exercises[p.currentExercise] ? exercises[p.currentExercise].nameTH : 'เสร็จแล้ว';
+
+      const div = document.createElement('div');
+      div.className = 'live-player';
+      div.style.background = isMe ? '#E8EEFF' : '#F8FAFC';
+      if (isMe) div.style.border = '2px solid #667eea';
+
+      div.innerHTML = `
+        <div class="live-avatar-wrap">${av.svg.replace('viewBox="0 0 60 60"', 'viewBox="0 0 60 60" width="26" height="26"')}</div>
+        <div class="live-player-info">
+          <div class="live-player-name">${p.name || ''}${isMe ? ' <span style="font-size:0.65rem;background:#667eea;color:white;padding:0.1rem 0.35rem;border-radius:2rem;">คุณ</span>' : ''}</div>
+          <div class="live-player-status">ท่า: ${exerciseName}</div>
+        </div>
+        <div class="live-player-score">${Math.round(p.score || 0)}%</div>
+        <div class="live-pulse"></div>
+      `;
+      list.appendChild(div);
+    });
+  });
+}
+
+function listenFeed() {
+  if (!firebaseReady) return;
+  db.ref('feed').orderByChild('timestamp').limitToLast(20).on('value', snap => {
+    const items = [];
+    snap.forEach(c => items.push(c.val()));
+    items.reverse();
+
+    const icons = { join: '👋', complete: '🎉', milestone: '🌟', exercise: '💪' };
+    const list = document.getElementById('feedList');
+    list.innerHTML = '';
+
+    if (items.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#94A3B8;font-size:0.875rem;padding:1rem;">รอกิจกรรม...</div>';
+      return;
+    }
+
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'feed-item';
+      div.innerHTML = `
+        <div class="feed-icon">${icons[item.type] || '📣'}</div>
+        <div>
+          <div class="feed-text">${item.text}</div>
+          <div class="feed-time">${getTimeAgo(item.timestamp)}</div>
         </div>
       `;
+      list.appendChild(div);
+    });
+  });
+}
+
+function listenOnlineCount() {
+  if (!firebaseReady) return;
+  db.ref('live').on('value', snap => {
+    document.getElementById('onlineCountBadge').textContent = `${snap.numChildren()} คนออนไลน์อยู่ตอนนี้`;
+  });
+}
+
+function loadLeaderboard() {
+  if (!firebaseReady) return;
+  switchTab(currentTab);
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['Today', 'Week', 'All'].forEach(t => document.getElementById('tab' + t).classList.remove('active'));
+  document.getElementById('tab' + (tab.charAt(0).toUpperCase() + tab.slice(1))).classList.add('active');
+
+  let path;
+  if (tab === 'today') path = `leaderboard/today/${new Date().toISOString().split('T')[0]}`;
+  else if (tab === 'week') path = `leaderboard/week/${getWeekKey()}`;
+  else path = `leaderboard/all`;
+
+  if (!firebaseReady) { renderLocalLeaderboard(); return; }
+
+  db.ref(path).orderByChild('score').limitToLast(50).once('value', snap => {
+    const entries = [];
+    snap.forEach(c => entries.push(c.val()));
+    entries.sort((a, b) => b.score - a.score);
+    renderLeaderboard(entries);
+  });
+}
+
+function renderLeaderboard(entries) {
+  const list = document.getElementById('lbList');
+  list.innerHTML = '';
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:2rem;font-size:0.875rem;">ยังไม่มีข้อมูล<br>เป็นคนแรกที่เล่น!</div>';
+    return;
+  }
+
+  let myRank = null;
+  const rankIcons = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+  entries.forEach((entry, index) => {
+    const rank = index + 1;
+    const isMe = entry.id === sessionId;
+    if (isMe) {
+      myRank = rank;
+      document.getElementById('bannerRank').textContent = rank;
+      document.getElementById('myRankPill').textContent = '#' + rank;
     }
 
-    function startDemoMode() {
-      document.getElementById('cameraOverlay').style.display = 'none';
-      startGame();
+    const av = getAvatarById(entry.avatarId || 'cat');
+    const div = document.createElement('div');
+    div.className = 'lb-item' + (isMe ? ' is-me' : '');
+    const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-other';
 
-      setInterval(() => {
-        if (!gameState.isPaused && gameState.isGameActive) {
-          const randomAccuracy = 60 + Math.random() * 35;
-          updateAccuracy(Math.round(randomAccuracy));
-        }
-      }, 500);
+    div.innerHTML = `
+      <div class="lb-rank ${rankClass}">${rankIcons[rank] || rank}</div>
+      <div class="lb-avatar-wrap">${av.svg.replace('viewBox="0 0 60 60"', 'viewBox="0 0 60 60" width="28" height="28"')}</div>
+      <div class="lb-info">
+        <div class="lb-name">${entry.name}${isMe ? ' <span class="you-badge">คุณ</span>' : ''}</div>
+        <div class="lb-meta">${av.name} · ${entry.department || ''}</div>
+      </div>
+      <div class="lb-score-col">
+        <div class="lb-score">${entry.points || 0} pts</div>
+        <div class="lb-accuracy">${entry.score || 0}%</div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  if (myRank === null) {
+    document.getElementById('bannerRank').textContent = entries.length + '+';
+    document.getElementById('myRankPill').textContent = '#—';
+  }
+}
+
+function renderLocalLeaderboard() {
+  if (!currentPlayer) return;
+  renderLeaderboard([{
+    id: sessionId, name: currentPlayer.name,
+    avatarId: currentPlayer.avatarId, avatarName: currentPlayer.avatarName,
+    department: currentPlayer.department, score: currentPlayer.lastScore || 0,
+    points: currentPlayer.totalPoints, exercises: 8
+  }]);
+}
+
+// ============================================================
+// TUTORIAL
+// ============================================================
+let currentSlide = 0;
+
+function buildTutorial() {
+  const carousel = document.getElementById('exerciseCarousel');
+  const indicators = document.getElementById('indicators');
+  carousel.innerHTML = '';
+  indicators.innerHTML = '';
+
+  exercises.forEach((ex, i) => {
+    const item = document.createElement('div');
+    item.className = 'carousel-item' + (i === 0 ? ' active' : '');
+    item.innerHTML = `
+      <div class="exercise-card">
+        <div class="exercise-image">
+          <div class="exercise-emoji">${['🧘','💪','🙆','🤸','🦸','🦵','🏃','🚶'][i]}</div>
+        </div>
+        <div class="exercise-details">
+          <span class="exercise-number">ท่าที่ ${i+1}/8</span>
+          <h3 class="exercise-card-title">${ex.name}</h3>
+          <p class="exercise-card-subtitle">${ex.nameTH}</p>
+          <p class="exercise-card-description">${ex.description}</p>
+          <div class="exercise-benefits">
+            <div class="benefits-title">💡 ประโยชน์</div>
+            <ul class="benefits-list">${ex.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+          </div>
+        </div>
+      </div>
+    `;
+    carousel.appendChild(item);
+
+    const dot = document.createElement('div');
+    dot.className = 'indicator-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    indicators.appendChild(dot);
+  });
+
+  document.getElementById('prevBtn').disabled = true;
+}
+
+function showSlide(n) {
+  const items = document.querySelectorAll('.carousel-item');
+  const dots = document.querySelectorAll('.indicator-dot');
+  if (n >= exercises.length) currentSlide = exercises.length - 1;
+  else if (n < 0) currentSlide = 0;
+  else currentSlide = n;
+  items.forEach((item, i) => item.classList.toggle('active', i === currentSlide));
+  dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+  document.getElementById('prevBtn').disabled = currentSlide === 0;
+  document.getElementById('nextBtn').disabled = currentSlide === exercises.length - 1;
+}
+
+function changeSlide(d) { showSlide(currentSlide + d); }
+function goToSlide(i) { showSlide(i); }
+function skipTutorial() { document.getElementById('tutorialModal').style.display = 'none'; }
+function completeTutorial() {
+  document.getElementById('tutorialModal').style.display = 'none';
+  localStorage.setItem('tutorialCompleted', 'true');
+}
+
+// ============================================================
+// GAME STATE & EXERCISES
+// ============================================================
+const gameState = {
+  currentExerciseIndex: 0, exerciseScores: [],
+  isPaused: false, isGameActive: false,
+  timeRemaining: 20, currentAccuracy: 0,
+  streak: 0, totalPoints: 0
+};
+
+const exercises = [
+  { name:'Neck Stretch', nameTH:'ยืดคอ', duration:20, description:'เอียงหัวไปข้างหนึ่ง กดเบาๆ ด้วยมือ', imageUrl:'https://i.imgur.com/OXAzoA9.jpeg', tips:['อย่ากดหัวแรงเกินไป','หายใจลึกๆ','ค้าง 15-20 วินาที'], targetPose:'neck_stretch' },
+  { name:'Shoulder Roll', nameTH:'หมุนไหล่', duration:20, description:'หมุนไหล่ทั้งสองข้างไปข้างหน้า 10 ครั้ง', imageUrl:'https://i.imgur.com/P65kbKR.jpeg', tips:['หมุนช้าๆ','ยกไหล่เต็มที่','หายใจสม่ำเสมอ'], targetPose:'shoulder_roll' },
+  { name:'Back Stretch', nameTH:'ยืดหลัง', duration:20, description:'นั่งตรง ประสานมือ เหยียดแขนไปข้างหน้า', imageUrl:'https://i.imgur.com/b7E6da1.jpeg', tips:['ประสานมือแน่น','โค้งหลังออกมา','ค้าง 15-20 วินาที'], targetPose:'back_stretch' },
+  { name:'Side Bend', nameTH:'โน้มข้าง', duration:20, description:'ยืนตรง ยกมือขึ้น โน้มตัวไปข้าง สลับซ้าย-ขวา', imageUrl:'https://i.imgur.com/ECdLcCI.jpeg', tips:['เท้าห่างเท่าไหล่','ยกมือขึ้นเหนือหัว','รู้สึกยืดสีข้าง'], targetPose:'side_bend' },
+  { name:'Chest Opener', nameTH:'เปิดอก', duration:20, description:'ประสานมือหลังหัว ดันอกไปข้างหน้า', imageUrl:'https://i.imgur.com/Z3BY6cS.jpeg', tips:['ประสานมือหลังหัว','ดันอกออกมา','ศอกชี้ออกด้านข้าง'], targetPose:'chest_opener' },
+  { name:'Hip Flexor', nameTH:'ยืดสะโพก', duration:20, description:'ย่อเข่าครึ่งทาง เอนตัวไปข้างหลัง', imageUrl:'https://i.imgur.com/BxBSsp4.jpeg', tips:['ท่า Lunge เข่าตั้งฉาก','เอนหลังเล็กน้อย','รู้สึกยืดสะโพก'], targetPose:'hip_flexor' },
+  { name:'Quad Stretch', nameTH:'ยืดต้นขา', duration:20, description:'ยืนขาเดียว จับเท้าข้างหลัง ดึงเข้าหาก้น', imageUrl:'https://i.imgur.com/rBhEIeQ.jpeg', tips:['ยืนขาเดียว','ดึงส้นเท้าเข้าหาก้น','จับผนังช่วยทรงตัว'], targetPose:'quad_stretch' },
+  { name:'Calf Stretch', nameTH:'ยืดน่อง', duration:20, description:'ก้าวเท้าหนึ่งไปหน้า เหยียดเข่าหลัง ส้นติดพื้น', imageUrl:'https://i.imgur.com/ftA6SpQ.jpeg', tips:['ก้าวเท้าหนึ่งข้าง','เข่าหลังตึง','รู้สึกยืดน่อง'], targetPose:'calf_stretch' }
+];
+
+function buildExerciseList() {
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = '';
+  exercises.forEach((ex, i) => {
+    const li = document.createElement('li');
+    li.className = 'exercise-item' + (i === 0 ? ' current' : '');
+    li.innerHTML = `<span class="exercise-name">${i+1}. ${ex.name} (${ex.nameTH})</span><span class="exercise-score score-pending">—</span>`;
+    list.appendChild(li);
+  });
+}
+
+function initState() {
+  if (!currentPlayer) return;
+  gameState.streak = currentPlayer.streak;
+  gameState.totalPoints = currentPlayer.totalPoints;
+  document.getElementById('streak').textContent = gameState.streak;
+  document.getElementById('totalPoints').textContent = gameState.totalPoints;
+}
+
+// ============================================================
+// PREVIEW
+// ============================================================
+let previewCountdownInterval = null;
+
+function showExercisePreview(index) {
+  const ex = exercises[index];
+  if (!ex) return;
+  document.getElementById('previewNumber').textContent = `ท่าที่ ${index+1}/8`;
+  document.getElementById('previewTitle').textContent = ex.name;
+  document.getElementById('previewSubtitle').textContent = ex.nameTH;
+  document.getElementById('previewDescription').textContent = ex.description;
+
+  const img = document.getElementById('previewImage');
+  const loading = document.getElementById('imageLoading');
+  img.style.opacity = '0'; loading.style.display = 'block';
+  img.src = ex.imageUrl;
+  img.onload = () => { loading.style.display = 'none'; img.style.opacity = '1'; };
+  img.onerror = () => { loading.style.display = 'none'; img.src = 'https://via.placeholder.com/640x360?text=ภาพไม่พร้อมใช้งาน'; img.style.opacity = '1'; };
+
+  document.getElementById('exercisePreview').style.display = 'flex';
+  document.getElementById('previewCountdown').style.display = 'none';
+  document.querySelector('.preview-actions').style.display = 'flex';
+
+  if (firebaseReady && currentPlayer) addFeedEvent('exercise', currentPlayer.name, currentPlayer.avatarName, ex.nameTH);
+}
+
+function startExerciseFromPreview() {
+  const countdown = document.getElementById('previewCountdown');
+  const actions = document.querySelector('.preview-actions');
+  countdown.style.display = 'block'; actions.style.display = 'none';
+  let n = 3;
+  document.getElementById('previewCountdownValue').textContent = n;
+  previewCountdownInterval = setInterval(() => {
+    n--;
+    if (n > 0) { document.getElementById('previewCountdownValue').textContent = n; }
+    else {
+      clearInterval(previewCountdownInterval);
+      document.getElementById('exercisePreview').style.display = 'none';
+      actions.style.display = 'flex';
+      startTimer();
     }
+  }, 1000);
+}
 
-    setTimeout(() => {
-      const overlay = document.getElementById('cameraOverlay');
-      if (overlay && overlay.style.display !== 'none') {
-        const existingContent = overlay.querySelector('.overlay-content');
-        if (existingContent && !existingContent.querySelector('button[onclick="startDemoMode()"]')) {
-          const demoBtn = document.createElement('button');
-          demoBtn.textContent = '🎮 โหมดทดสอบ (ไม่ใช้กล้อง)';
-          demoBtn.style.marginTop = '0.5rem';
-          demoBtn.onclick = startDemoMode;
-          existingContent.appendChild(demoBtn);
-        }
-      }
-    }, 3000);
-  </script>
+function skipPreview() {
+  clearInterval(previewCountdownInterval);
+  document.getElementById('exercisePreview').style.display = 'none';
+  document.querySelector('.preview-actions').style.display = 'flex';
+  startTimer();
+}
+
+// ============================================================
+// CAMERA
+// ============================================================
+let camera = null, pose = null, canvasCtx = null;
+
+async function startCamera() {
+  const overlay = document.getElementById('cameraOverlay');
+  overlay.innerHTML = '<div style="text-align:center;"><div class="loading-spinner"></div><div style="color:white;">กำลังเปิดกล้อง...</div></div>';
+  try {
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    canvasCtx = canvas.getContext('2d');
+    pose = new Pose({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
+    pose.setOptions({ modelComplexity:1, smoothLandmarks:true, enableSegmentation:false, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+    pose.onResults(onPoseResults);
+    camera = new Camera(video, { onFrame: async () => { await pose.send({ image: video }); }, width:640, height:480 });
+    await camera.start();
+    overlay.style.display = 'none';
+    startGame();
+  } catch (err) {
+    overlay.innerHTML = `<div class="overlay-content"><div style="font-size:2rem;margin-bottom:0.75rem;">❌</div><div>ไม่สามารถเข้าถึงกล้องได้</div><button onclick="startCamera()">🔄 ลองอีกครั้ง</button><button onclick="startDemoMode()">🎮 โหมดทดสอบ</button></div>`;
+  }
+}
+
+function onPoseResults(results) {
+  if (!results.poseLandmarks || gameState.isPaused || !gameState.isGameActive) return;
+  const canvas = document.getElementById('canvas'), video = document.getElementById('webcam');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvasCtx.save(); canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+  drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color:'#667eea', lineWidth:4 });
+  drawLandmarks(canvasCtx, results.poseLandmarks, { color:'#764ba2', lineWidth:2, radius:6 });
+  canvasCtx.restore();
+  updateAccuracy(calculatePoseAccuracy(results.poseLandmarks));
+}
+
+function calculatePoseAccuracy(lm) {
+  const nose=lm[0], ls=lm[11], rs=lm[12], lh=lm[23], rh=lm[24];
+  const sw=Math.abs(ls.x-rs.x), ba=Math.abs((ls.x+rs.x)/2-(lh.x+rh.x)/2);
+  let score=70;
+  if(sw>0.15&&sw<0.35) score+=10;
+  if(ba<0.05) score+=10;
+  if(nose.visibility>0.8) score+=10;
+  score+=Math.random()*10-5;
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+
+function updateAccuracy(val) {
+  gameState.currentAccuracy = val;
+  document.getElementById('accuracyValue').textContent = val + '%';
+  const statusEl=document.getElementById('accuracyStatus'), box=document.getElementById('feedbackBox'), text=document.getElementById('feedbackText');
+  if(val>=90){statusEl.textContent='🎉 Perfect!';statusEl.className='accuracy-status status-excellent';text.textContent='ยอดเยี่ยม!';box.style.cssText='display:block;background:#DCFCE7;border-left:4px solid #10B981;';}
+  else if(val>=80){statusEl.textContent='👍 Great!';statusEl.className='accuracy-status status-good';text.textContent='ดีมาก!';box.style.cssText='display:block;background:#E8EEFF;border-left:4px solid #2196F3;';}
+  else if(val>=50){statusEl.textContent='⚠️ ปรับท่า';statusEl.className='accuracy-status status-warning';text.textContent='ลองปรับท่าให้ดีขึ้น';box.style.cssText='display:block;background:#FFF9E6;border-left:4px solid #F59E0B;';}
+  else{statusEl.textContent='❌ ปรับปรุง';statusEl.className='accuracy-status status-danger';text.textContent='ยืดให้มากกว่านี้';box.style.cssText='display:block;background:#FEE2E2;border-left:4px solid #EF4444;';}
+  updateLiveStatus(gameState.currentExerciseIndex, val);
+}
+
+// ============================================================
+// GAME FLOW
+// ============================================================
+function startGame() {
+  gameState.isGameActive=true; gameState.currentExerciseIndex=0; gameState.exerciseScores=[];
+  loadExercise(0);
+}
+
+function loadExercise(index) {
+  if(index>=exercises.length){endGame();return;}
+  const ex=exercises[index];
+  gameState.currentExerciseIndex=index; gameState.timeRemaining=ex.duration;
+  document.getElementById('exerciseTitle').textContent=`${index+1}. ${ex.nameTH}`;
+  document.getElementById('exerciseDesc').textContent=ex.description;
+  document.getElementById('currentExercise').textContent=index+1;
+  document.getElementById('progressFill').style.width=((index/exercises.length)*100)+'%';
+  const items=document.querySelectorAll('.exercise-item');
+  items.forEach((item,i)=>{item.classList.remove('current','completed');if(i===index)item.classList.add('current');else if(i<index)item.classList.add('completed');});
+  showExercisePreview(index);
+}
+
+let timerInterval=null;
+
+function startTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('timerValue').textContent=gameState.timeRemaining;
+  timerInterval=setInterval(()=>{
+    if(gameState.isPaused)return;
+    gameState.timeRemaining--;
+    document.getElementById('timerValue').textContent=gameState.timeRemaining;
+    if(gameState.timeRemaining<=0){clearInterval(timerInterval);completeExercise();}
+  },1000);
+}
+
+function completeExercise() {
+  const score=gameState.currentAccuracy;
+  gameState.exerciseScores.push(score);
+  const items=document.querySelectorAll('.exercise-item');
+  const span=items[gameState.currentExerciseIndex].querySelector('.exercise-score');
+  span.textContent=score+'%';
+  span.className=score>=90?'exercise-score score-excellent':score>=80?'exercise-score score-good':'exercise-score score-warning';
+  showToast(score>=90?'🌟':score>=80?'👍':'💪', exercises[gameState.currentExerciseIndex].nameTH, `ได้ ${score}%`);
+  setTimeout(()=>loadExercise(gameState.currentExerciseIndex+1),1500);
+}
+
+function skipExercise() {
+  if(!gameState.isGameActive)return;
+  clearInterval(timerInterval);
+  gameState.exerciseScores.push(0);
+  const items=document.querySelectorAll('.exercise-item');
+  const span=items[gameState.currentExerciseIndex].querySelector('.exercise-score');
+  span.textContent='Skip'; span.className='exercise-score score-pending';
+  loadExercise(gameState.currentExerciseIndex+1);
+}
+
+function pauseGame() {
+  gameState.isPaused=!gameState.isPaused;
+  const btn=document.getElementById('pauseBtn');
+  if(gameState.isPaused){btn.innerHTML='▶️ เล่นต่อ';btn.classList.replace('btn-secondary','btn-primary');}
+  else{btn.innerHTML='⏸️ หยุดชั่วคราว';btn.classList.replace('btn-primary','btn-secondary');}
+}
+
+function endGame() {
+  gameState.isGameActive=false; clearInterval(timerInterval);
+  const scores=gameState.exerciseScores.filter(s=>s>0);
+  const avgScore=scores.length>0?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  gameState.streak++; const pts=Math.round(avgScore*1.5); gameState.totalPoints+=pts;
+  if(currentPlayer){currentPlayer.streak=gameState.streak;currentPlayer.totalPoints=gameState.totalPoints;currentPlayer.lastScore=avgScore;}
+  localStorage.setItem('streak',gameState.streak); localStorage.setItem('totalPoints',gameState.totalPoints);
+  if(firebaseReady&&currentPlayer){
+    saveScore(avgScore,gameState.exerciseScores.length);
+    addFeedEvent('complete',currentPlayer.name,currentPlayer.avatarName,avgScore);
+    db.ref(`live/${sessionId}`).update({isPlaying:false,score:avgScore});
+  }
+  document.getElementById('totalPoints').textContent=gameState.totalPoints;
+  document.getElementById('bannerPoints').textContent=gameState.totalPoints+' pts';
+  document.getElementById('streak').textContent=gameState.streak;
+  if(firebaseReady) setTimeout(()=>switchTab(currentTab),1000);
+  showResults(avgScore,pts);
+}
+
+function showResults(avgScore, ptsEarned) {
+  const overlay=document.getElementById('cameraOverlay');
+  overlay.style.display='flex'; overlay.style.background='rgba(0,0,0,0.95)';
+  const rank=document.getElementById('bannerRank').textContent;
+  const av=currentPlayer?getAvatarById(currentPlayer.avatarId):cartoonAvatars[0];
+  overlay.innerHTML=`
+    <div class="overlay-content" style="max-width:480px;">
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid white;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;overflow:hidden;">
+        ${av.svg.replace('viewBox="0 0 60 60"','viewBox="0 0 60 60" width="64" height="64"')}
+      </div>
+      <h2 style="font-size:2rem;margin-bottom:1rem;">🎉 เสร็จสิ้น!</h2>
+      <div style="background:rgba(255,255,255,0.15);padding:1.5rem;border-radius:1rem;margin-bottom:1rem;">
+        <div style="font-size:3.5rem;font-weight:700;">${avgScore}%</div>
+        <div style="opacity:0.9;">คะแนนเฉลี่ย</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);padding:1.25rem;border-radius:1rem;margin-bottom:1rem;text-align:left;">
+        <div style="margin-bottom:0.5rem;">📊 ท่าที่ทำ: ${gameState.exerciseScores.length}/8</div>
+        <div style="margin-bottom:0.5rem;">💎 Points: +${ptsEarned} (รวม ${gameState.totalPoints})</div>
+        <div style="margin-bottom:0.5rem;">🔥 Streak: ${gameState.streak} วัน</div>
+        <div>🏆 อันดับ: #${rank}</div>
+      </div>
+      <div style="display:flex;gap:0.75rem;">
+        <button onclick="location.href='index.html'" style="flex:1;padding:0.875rem;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:0.75rem;font-weight:600;cursor:pointer;font-family:'Prompt',sans-serif;">🏠 กลับหน้าหลัก</button>
+        <button onclick="location.reload()" style="flex:1;padding:0.875rem;background:white;color:#667eea;border:none;border-radius:0.75rem;font-weight:700;cursor:pointer;font-family:'Prompt',sans-serif;">🔄 เล่นอีกรอบ</button>
+      </div>
+    </div>
+  `;
+}
+
+function startDemoMode() {
+  document.getElementById('cameraOverlay').style.display='none';
+  startGame();
+  setInterval(()=>{ if(!gameState.isPaused&&gameState.isGameActive) updateAccuracy(Math.round(60+Math.random()*35)); },800);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(icon, title, msg, duration=3500) {
+  const container=document.getElementById('toastContainer');
+  const toast=document.createElement('div');
+  toast.className='toast';
+  toast.innerHTML=`<div class="toast-icon">${icon}</div><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+  container.appendChild(toast);
+  setTimeout(()=>{ toast.style.animation='toastOut 0.4s ease forwards'; setTimeout(()=>toast.remove(),400); },duration);
+}
+
+function getTimeAgo(timestamp) {
+  const diff=Date.now()-timestamp, mins=Math.floor(diff/60000), secs=Math.floor(diff/1000);
+  if(secs<60)return'เมื่อกี้'; if(mins<60)return`${mins} นาทีที่แล้ว`; return`${Math.floor(mins/60)} ชม.ที่แล้ว`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', ()=>{
+  initAvatarGrid();
+
+  const savedName=localStorage.getItem('playerName');
+  const savedAvatarId=localStorage.getItem('playerAvatarId');
+  const savedDept=localStorage.getItem('playerDept');
+
+  if(savedName) document.getElementById('usernameInput').value=savedName;
+  if(savedDept) document.getElementById('departmentInput').value=savedDept;
+  if(savedAvatarId){
+    const idx=cartoonAvatars.findIndex(a=>a.id===savedAvatarId);
+    if(idx>=0){
+      selectedAvatarId=savedAvatarId;
+      setTimeout(()=>{
+        const opts=document.querySelectorAll('.avatar-option');
+        opts.forEach((o,i)=>o.classList.toggle('selected',i===idx));
+        updateSelectedPreview(cartoonAvatars[idx]);
+      },100);
+    }
+  }
+
+  if(firebaseReady){
+    db.ref('live').on('value',snap=>{
+      document.getElementById('onlineCountBadge').textContent=`${snap.numChildren()} คนออนไลน์อยู่ตอนนี้`;
+    });
+  } else {
+    document.getElementById('onlineCountBadge').textContent='โหมดออฟไลน์';
+  }
+
+  document.addEventListener('keydown',e=>{
+    const modal=document.getElementById('tutorialModal');
+    if(modal&&modal.style.display==='flex'){
+      if(e.key==='ArrowLeft')changeSlide(-1);
+      if(e.key==='ArrowRight')changeSlide(1);
+      if(e.key==='Escape')skipTutorial();
+    }
+  });
+});
+</script>
 </body>
 </html>
